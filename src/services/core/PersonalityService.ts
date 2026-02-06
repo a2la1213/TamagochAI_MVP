@@ -416,20 +416,10 @@ export function getIdealTemperature(genome: Genome, stage: EvolutionStage): numb
 /**
  * Détermine le max_tokens idéal basé sur la personnalité
  */
-export function getIdealMaxTokens(genome: Genome, stage: EvolutionStage): number {
-  let base = 400;
-
-  // Social + Energy augmentent la verbosité
-  base += ((genome.social + genome.energy) / 2 - 50) * 4;  // -200 à +200
-
-  // Stades avancés = vocabulaire plus riche, réponses potentiellement plus longues
-  const stageBonus: Record<EvolutionStage, number> = {
-    emergence: -100,
-    learning: 0,
-    individuation: 50,
-    wisdom: 100,
-    transcendance: 150,
-  };
+export function getIdealMaxTokens(genome: any, stage: string): number {
+  // Aucune limite — laisser le TamadachAI s'exprimer librement
+  return 16384;
+};
   base += stageBonus[stage];
 
   return clamp(Math.round(base), 150, 800);

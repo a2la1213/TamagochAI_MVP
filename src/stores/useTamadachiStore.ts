@@ -301,8 +301,10 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       } else {
         fullResponse = response.content; // fallback message
         log.error(`LLM failed: ${response.error}`);
-        // DEBUG: Afficher l'erreur à l'écran
-        Alert.alert('LLM Error', `${response.error}`);
+        // Erreur user-friendly pour quota
+        if (response.error?.includes('429') || response.error?.includes('quota')) {
+          Alert.alert('Quota dépassé', 'Attends quelques secondes ou ajoute une autre clé API.');
+        }
       }
       set({ streamingText: fullResponse });
 

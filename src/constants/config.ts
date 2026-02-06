@@ -68,7 +68,7 @@ export const LLM_CONFIG = {
       models: ['gemini-2.0-flash', 'gemini-2.0-flash'],
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
       isPaid: false,
-      maxTokens: 8192,
+      maxTokens: 4096,
       description: 'Gratuit, rapide, bon par défaut',
     },
     claude: {
@@ -77,7 +77,7 @@ export const LLM_CONFIG = {
       models: ['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001'],
       baseUrl: 'https://api.anthropic.com/v1/messages',
       isPaid: true,
-      maxTokens: 8192,
+      maxTokens: 4096,
       description: 'Empathique, meilleure personnalité',
     },
     openai: {
@@ -86,7 +86,7 @@ export const LLM_CONFIG = {
       models: ['gpt-4o-mini', 'gpt-4o'],
       baseUrl: 'https://api.openai.com/v1/chat/completions',
       isPaid: true,
-      maxTokens: 8192,
+      maxTokens: 4096,
       description: 'Populaire, polyvalent',
     },
     mistral: {
@@ -95,7 +95,7 @@ export const LLM_CONFIG = {
       models: ['mistral-small-latest', 'mistral-medium-latest'],
       baseUrl: 'https://api.mistral.ai/v1/chat/completions',
       isPaid: true,
-      maxTokens: 8192,
+      maxTokens: 4096,
       description: 'Français, rapide, bon marché',
     },
     local: {

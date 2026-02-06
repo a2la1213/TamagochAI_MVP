@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTamadachiData, useEvolution, useEmotion } from '../hooks';
+import { useTamadachiStore } from '../stores/useTamadachiStore';
 import { THEME } from '../constants/config';
 import { EVOLUTION_STAGES } from '../constants/evolution';
 import { getAllDreams, getRecentDreams } from '../services/core/DreamService';
@@ -59,6 +60,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
   const { tamadachi, genome, stats, emotion } = useTamadachiData();
   const { stage, totalXP } = useEvolution();
   const { emoji, primary, intensity } = useEmotion();
+  const hormones = useTamadachiStore(s => s.hormones);
 
   const [progressData, setProgressData] = useState<any>(null);
   const [dreams, setDreams] = useState<Dream[]>([]);
@@ -174,6 +176,22 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
           </View>
         </View>
 
+
+        {/* Hormones */}
+        {hormones && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🧪 Hormones</Text>
+            <View style={styles.card}>
+              <HormoneBar label="Dopamine" value={hormones.dopamine} color="#F59E0B" emoji="⚡" />
+              <HormoneBar label="Sérotonine" value={hormones.serotonin} color="#3B82F6" emoji="☀️" />
+              <HormoneBar label="Ocytocine" value={hormones.oxytocin} color="#EC4899" emoji="💕" />
+              <HormoneBar label="Cortisol" value={hormones.cortisol} color="#EF4444" emoji="😰" />
+              <HormoneBar label="Adrénaline" value={hormones.adrenaline} color="#F97316" emoji="🔥" />
+              <HormoneBar label="Endorphines" value={hormones.endorphins} color="#10B981" emoji="😊" />
+            </View>
+          </View>
+        )}
+
         {/* Statistiques */}
         {stats && (
           <View style={styles.section}>
@@ -235,6 +253,21 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
 // HELPER
 // ============================================================
 
+
+function HormoneBar({ label, value, color, emoji }: { label: string; value: number; color: string; emoji: string }) {
+  const percent = Math.round(value * 100);
+  return (
+    <View style={styles.hormoneRow}>
+      <Text style={styles.hormoneEmoji}>{emoji}</Text>
+      <Text style={styles.hormoneLabel}>{label}</Text>
+      <View style={styles.hormoneBarContainer}>
+        <ProgressBar percent={percent} color={color} />
+      </View>
+      <Text style={styles.hormoneValue}>{percent}%</Text>
+    </View>
+  );
+}
+
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.statRow}>
@@ -269,7 +302,7 @@ const styles = StyleSheet.create({
   },
   stageEmoji: { fontSize: 48, marginBottom: 8 },
   stageName: { fontSize: 22, fontWeight: '700', color: THEME.colors.text, marginBottom: 4 },
-  stageDescription: { fontSize: 13, color: THEME.colors.textSecondary, textAlign: 'center', marginBottom: 16, paddingHorizontal: 8 },
+  stageDescription: { fontSize: 13, color: THEME.colors.textSecondary, textAlign: 'center', marginBottom: 16, paddingHorizontal: 16 },
   xpContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   xpText: { fontSize: 18, fontWeight: '700', color: THEME.colors.primary },
   xpNext: { fontSize: 14, color: THEME.colors.textSecondary },
@@ -299,7 +332,7 @@ const styles = StyleSheet.create({
 
   // Genome traits
   traitRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6 },
-  traitLabel: { width: 85, fontSize: 14, color: THEME.colors.textSecondary },
+  traitLabel: { width: 95, fontSize: 14, color: THEME.colors.textSecondary },
   traitBarContainer: { flex: 1, marginHorizontal: 8 },
   traitValue: { width: 30, fontSize: 14, fontWeight: '600', color: THEME.colors.text, textAlign: 'right' },
 
@@ -313,10 +346,17 @@ const styles = StyleSheet.create({
   emotionPrimary: { fontSize: 18, fontWeight: '600', color: THEME.colors.text, textTransform: 'capitalize' },
   emotionIntensity: { fontSize: 13, color: THEME.colors.textSecondary },
 
+  // Hormones
+  hormoneRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 5 },
+  hormoneEmoji: { fontSize: 16, width: 24 },
+  hormoneLabel: { width: 90, fontSize: 13, color: THEME.colors.textSecondary },
+  hormoneBarContainer: { flex: 1, marginHorizontal: 6 },
+  hormoneValue: { width: 36, fontSize: 13, fontWeight: '600', color: THEME.colors.text, textAlign: 'right' },
+
   // Stats
   statRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  statLabel: { fontSize: 14, color: THEME.colors.textSecondary },
-  statValue: { fontSize: 14, fontWeight: '600', color: THEME.colors.text },
+  statLabel: { fontSize: 14, color: THEME.colors.textSecondary, flexShrink: 0, marginRight: 12 },
+  statValue: { fontSize: 14, fontWeight: '600', color: THEME.colors.text, flexShrink: 1, textAlign: 'right' },
 
   // Dreams
   dreamCard: {
