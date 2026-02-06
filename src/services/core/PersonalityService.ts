@@ -419,8 +419,4 @@ export function getIdealTemperature(genome: Genome, stage: EvolutionStage): numb
 export function getIdealMaxTokens(genome: any, stage: string): number {
   // Aucune limite — laisser le TamadachAI s'exprimer librement
   return 16384;
-};
-  base += stageBonus[stage];
-
-  return clamp(Math.round(base), 150, 800);
 }
