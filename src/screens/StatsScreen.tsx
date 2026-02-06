@@ -190,7 +190,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
                   <Text style={styles.dreamTitle}>{dream.title}</Text>
                   {dream.wasShared && <Text style={styles.dreamShared}>raconté</Text>}
                 </View>
-                <Text style={styles.dreamNarrative} numberOfLines={3}>
+                <Text style={styles.dreamNarrative} >
                   {dream.narrative}
                 </Text>
                 <Text style={styles.dreamDate}>

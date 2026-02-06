@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 4,
     marginHorizontal: 12,
-    maxWidth: '85%',
+    maxWidth: '92%',
   },
   userContainer: {
     alignSelf: 'flex-end',

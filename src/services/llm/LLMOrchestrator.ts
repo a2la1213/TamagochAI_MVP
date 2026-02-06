@@ -321,8 +321,11 @@ export async function setApiKey(provider: LLMProviderName, key: string): Promise
   instance.setApiKey(key);
 
   // On sauvegarde directement — la validation se fera au premier appel
-
   await setSetting(`api_key_${provider}`, key);
+
+  // Recalculer l'ordre de fallback avec le nouveau provider
+  updateFallbackOrder();
+  log.info(`API key set for ${provider}, available: ${getAvailableProviders().join(', ')}`);
   updateFallbackOrder();
   log.info(`API key set for ${provider}`);
   return true;

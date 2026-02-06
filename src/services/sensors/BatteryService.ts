@@ -24,6 +24,7 @@ const log = createLogger('Battery');
 let currentLevel: number = 1;
 let currentIsCharging: boolean = false;
 let subscription: Battery.Subscription | null = null;
+let pollingInterval: ReturnType<typeof setInterval> | null = null;
 let chargingSubscription: Battery.Subscription | null = null;
 let lastReactionLevel: string | null = null;
 let tamagochaiId: string | null = null;
@@ -69,6 +70,21 @@ export async function initBattery(id: string): Promise<{
         log.info('🔌 Charging stopped');
       }
     });
+
+    // Polling backup toutes les 60s (certains appareils ne fire pas les listeners)
+    pollingInterval = setInterval(async () => {
+      try {
+        const newLevel = await Battery.getBatteryLevelAsync();
+        const state = await Battery.getBatteryStateAsync();
+        const newCharging = state === Battery.BatteryState.CHARGING;
+        if (Math.abs(newLevel - currentLevel) > 0.01) {
+          const oldLevel = currentLevel;
+          currentLevel = newLevel;
+          handleLevelChange(oldLevel, newLevel);
+        }
+        currentIsCharging = newCharging;
+      } catch {}
+    }, 60000);
 
     return { level: currentLevel, isCharging: currentIsCharging };
   } catch (error) {
