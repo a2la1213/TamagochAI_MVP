@@ -1,4 +1,4 @@
-export * from './tamagochai';
+export * from './tamadachi';
 export * from './emotion';
 export * from './hormone';
 export * from './evolution';

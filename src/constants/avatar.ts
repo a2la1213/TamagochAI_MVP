@@ -1,7 +1,7 @@
 // src/constants/avatar.ts
-// Système d'avatar du TamagochAI — MVP COMPLET
+// Système d'avatar du TamadachAI — MVP COMPLET
 //
-// L'avatar est la représentation visuelle du TamagochAI.
+// L'avatar est la représentation visuelle du TamadachAI.
 // Il a un type (robot, humanoïde, etc.), un style, une couleur,
 // et des expressions qui changent selon l'émotion.
 //
@@ -13,7 +13,7 @@ import {
   AvatarStyle,
   AvatarExpression,
   AvatarConfig,
-} from '../types/tamagochai';
+} from '../types/tamadachi';
 
 // ============================================================
 // CONFIGURATION DES TYPES D'AVATAR

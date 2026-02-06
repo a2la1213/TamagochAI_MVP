@@ -1,10 +1,10 @@
 export {
   useAppLifecycle,
   useChat,
-  useTamagochaiData,
+  useTamadachiData,
   useBirth,
   useEvolution,
   useEmotion,
   useBattery,
   useSettings,
-} from './useTamagochai';
+} from './useTamadachi';

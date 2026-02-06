@@ -1,5 +1,5 @@
 // src/constants/config.ts
-// Configuration globale de l'application TamagochAI — MVP COMPLET
+// Configuration globale de l'application TamadachAI — MVP COMPLET
 // Ce fichier centralise TOUTES les constantes de configuration.
 // Aucun magic number nulle part dans le code — tout est ici.
 
@@ -7,7 +7,7 @@
 // APP
 // ============================================================
 export const APP_CONFIG = {
-  name: 'TamagochAI',
+  name: 'TamadachAI',
   version: '1.0.0-mvp',
   buildNumber: 1,
   description: 'Ton compagnon IA qui grandit avec toi',
@@ -35,7 +35,7 @@ export const APP_CONFIG = {
 // DATABASE
 // ============================================================
 export const DB_CONFIG = {
-  name: 'tamagochai.db',
+  name: 'tamadachi.db',
   version: 1,
   
   // Pragmas SQLite pour performance
@@ -385,24 +385,24 @@ export const THEME = {
 // ============================================================
 export const STORAGE_KEYS = {
   // Onboarding
-  hasCompletedOnboarding: '@tamagochai_onboarding_complete',
+  hasCompletedOnboarding: '@tamadachi_onboarding_complete',
   
   // LLM
-  selectedProvider: '@tamagochai_llm_provider',
-  apiKeys: '@tamagochai_api_keys',
-  selectedLocalModel: '@tamagochai_local_model',
+  selectedProvider: '@tamadachi_llm_provider',
+  apiKeys: '@tamadachi_api_keys',
+  selectedLocalModel: '@tamadachi_local_model',
   
   // Chat
-  currentMessages: '@tamagochai_messages',
-  userPreferences: '@tamagochai_user_prefs',
+  currentMessages: '@tamadachi_messages',
+  userPreferences: '@tamadachi_user_prefs',
   
   // Settings
-  settings: '@tamagochai_settings',
-  xpMode: '@tamagochai_xp_mode',
+  settings: '@tamadachi_settings',
+  xpMode: '@tamadachi_xp_mode',
   
   // Cache
-  lastHormoneUpdate: '@tamagochai_last_hormone_update',
-  lastSensorRead: '@tamagochai_last_sensor_read',
+  lastHormoneUpdate: '@tamadachi_last_hormone_update',
+  lastSensorRead: '@tamadachi_last_sensor_read',
 } as const;
 
 // ============================================================

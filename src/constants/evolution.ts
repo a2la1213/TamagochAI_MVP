@@ -1,8 +1,8 @@
 // src/constants/evolution.ts
-// Système d'évolution et XP du TamagochAI — MVP COMPLET
+// Système d'évolution et XP du TamadachAI — MVP COMPLET
 //
 // L'évolution est basée sur l'XP (expérience), PAS sur le temps.
-// Plus l'humain interagit de manière qualitative, plus le TamagochAI évolue.
+// Plus l'humain interagit de manière qualitative, plus le TamadachAI évolue.
 // Le système anti-grind empêche de farmer l'XP en spammant.
 //
 // 5 stades : Émergence → Apprentissage → Individuation → Sagesse → Transcendance
@@ -11,7 +11,7 @@
 import {
   EvolutionStage,
   AvatarExpression,
-} from '../types/tamagochai';
+} from '../types/tamadachi';
 import {
   StageConfig,
   XPSource,
@@ -497,7 +497,7 @@ export function getAvatarExpressionForStage(
 }
 
 /**
- * Génère le message d'évolution quand le TamagochAI change de stade
+ * Génère le message d'évolution quand le TamadachAI change de stade
  */
 export function getEvolutionMessage(
   name: string,

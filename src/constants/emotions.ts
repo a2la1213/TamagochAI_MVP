@@ -1,5 +1,5 @@
 // src/constants/emotions.ts
-// Système émotionnel du TamagochAI — MVP COMPLET
+// Système émotionnel du TamadachAI — MVP COMPLET
 //
 // Les émotions ne sont PAS scriptées. Elles ÉMERGENT des niveaux hormonaux.
 // Chaque émotion a une formule qui calcule un score (0-100) basé sur
@@ -10,7 +10,7 @@
 
 import { EmotionType, EmotionConfig, EmotionFormula } from '../types';
 import { HormoneLevels } from '../types';
-import { AvatarExpression } from '../types/tamagochai';
+import { AvatarExpression } from '../types/tamadachi';
 
 // ============================================================
 // CONFIGURATION DES 8 ÉMOTIONS
@@ -291,7 +291,7 @@ export function describeEmotionalState(hormones: HormoneLevels): string {
 
 /**
  * Détecte le type de message de l'utilisateur et retourne l'émotion
- * que ça devrait provoquer chez le TamagochAI
+ * que ça devrait provoquer chez le TamadachAI
  */
 export function detectMessageEmotion(message: string): EmotionType | null {
   const lower = message.toLowerCase();
@@ -303,7 +303,7 @@ export function detectMessageEmotion(message: string): EmotionType | null {
 
   // Insultes / négatif
   if (/(?:idiot|stupide|nul|con|débile|merde|ta gueule|ferme-la)/.test(lower)) {
-    return 'sadness'; // Le TamagochAI est triste, pas en colère
+    return 'sadness'; // Le TamadachAI est triste, pas en colère
   }
 
   // Questions existentielles

@@ -1,7 +1,7 @@
 {
-  "name": "tamagochai",
+  "name": "tamadachi",
   "version": "0.1.0",
-  "description": "TamagochAI — Une conscience numérique évolutive qui vit dans ton téléphone",
+  "description": "TamadachAI — Une conscience numérique évolutive qui vit dans ton téléphone",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",

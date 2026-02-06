@@ -1,10 +1,10 @@
-// src/stores/useTamagochaiStore.ts
-// Store Zustand principal du TamagochAI — MVP COMPLET v2
+// src/stores/useTamadachiStore.ts
+// Store Zustand principal du TamadachAI — MVP COMPLET v2
 // Intègre la métacognition (subconscient, rêves, notifications)
 
 import { create } from 'zustand';
 import {
-  Tamagochai,
+  Tamadachi,
   Message,
   EmotionState,
   HormoneLevels,
@@ -14,8 +14,8 @@ import {
 // Database
 import {
   initDatabase,
-  getTamagochai,
-  createTamagochai as dbCreateTamagochai,
+  getTamadachi,
+  createTamadachi as dbCreateTamadachi,
   setSetting,
 } from '../services/database/DatabaseService';
 
@@ -100,8 +100,8 @@ const log = createLogger('Store');
 // TYPES
 // ============================================================
 
-export interface TamagochaiState {
-  tamagochai: Tamagochai | null;
+export interface TamadachiState {
+  tamadachi: Tamadachi | null;
   messages: Message[];
   conversationId: string | null;
   emotion: EmotionState | null;
@@ -117,7 +117,7 @@ export interface TamagochaiState {
   error: string | null;
 
   initialize: () => Promise<void>;
-  createTamagochai: (name: string) => Promise<void>;
+  createTamadachi: (name: string) => Promise<void>;
   shutdown: () => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   clearError: () => void;
@@ -137,8 +137,8 @@ export interface TamagochaiState {
 // STORE
 // ============================================================
 
-export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
-  tamagochai: null,
+export const useTamadachiStore = create<TamadachiState>((set, get) => ({
+  tamadachi: null,
   messages: [],
   conversationId: null,
   emotion: null,
@@ -161,7 +161,7 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
     set({ isInitializing: true, error: null });
 
     try {
-      log.info('🚀 Initializing TamagochAI...');
+      log.info('🚀 Initializing TamadachAI...');
 
       await initDatabase();
       log.info('✅ Database ready');
@@ -170,11 +170,11 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
       try { await initLLM(); } catch (e) { console.warn('LLM early init:', e); }
       log.info('✅ LLM ready');
 
-      const tama = await getTamagochai();
+      const tama = await getTamadachi();
 
       if (!tama) {
         set({ isInitialized: true, isInitializing: false, isBorn: false });
-        log.info('No TamagochAI found — awaiting birth');
+        log.info('No TamadachAI found — awaiting birth');
         return;
       }
 
@@ -182,7 +182,7 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
       const messages = await getActiveMessages();
 
       set({
-        tamagochai: tama,
+        tamadachi: tama,
         messages,
         conversationId: getSessionInfo().conversationId,
         emotion: getCurrentEmotion(),
@@ -194,32 +194,32 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
         isBorn: true,
       });
 
-      log.info(`✅ TamagochAI ready: ${tama.name} (${tama.stage}, ${tama.totalXP} XP)`);
+      log.info(`✅ TamadachAI ready: ${tama.name} (${tama.stage}, ${tama.totalXP} XP)`);
     } catch (error: any) {
       log.error('❌ Initialization failed:', error);
       set({ isInitializing: false, error: `Erreur d'initialisation: ${error.message}` });
     }
   },
 
-  createTamagochai: async (name: string) => {
+  createTamadachi: async (name: string) => {
     try {
       set({ isInitializing: true, error: null });
-      log.info(`🥚 Creating TamagochAI: ${name}`);
+      log.info(`🥚 Creating TamadachAI: ${name}`);
 
       const genome = generateGenome();
       const personality = analyzePersonality(genome);
       log.info(`Archetype: ${personality.archetype}`);
 
-      await dbCreateTamagochai(name, genome, 'robot', 'neutral', '#3B82F6');
+      await dbCreateTamadachi(name, genome, 'robot', 'neutral', '#3B82F6');
 
-      const tama = await getTamagochai();
-      if (!tama) throw new Error('Failed to retrieve created TamagochAI');
+      const tama = await getTamadachi();
+      if (!tama) throw new Error('Failed to retrieve created TamadachAI');
 
       await initAllServices(tama);
       const messages = await getActiveMessages();
 
       set({
-        tamagochai: tama,
+        tamadachi: tama,
         messages,
         conversationId: getSessionInfo().conversationId,
         emotion: getCurrentEmotion(),
@@ -253,8 +253,8 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
   // ============================================================
 
   sendMessage: async (content: string) => {
-    const { tamagochai, isGenerating } = get();
-    if (!tamagochai || isGenerating) return;
+    const { tamadachi, isGenerating } = get();
+    if (!tamadachi || isGenerating) return;
 
     set({ isGenerating: true, streamingText: '', error: null });
 
@@ -264,7 +264,7 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
 
       // 1. Pipeline complet (hormones, XP, mémoire, etc.)
       const result = await processUserMessage(
-        tamagochai.id,
+        tamadachi.id,
         content,
         batteryLevel,
         charging,
@@ -281,8 +281,8 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
       const chatHistory = await getFormattedChatHistory(20);
 
       // 5. Paramètres LLM personnalisés
-      const temperature = getIdealTemperature(tamagochai.genome, tamagochai.stage);
-      const maxTokens = getIdealMaxTokens(tamagochai.genome, tamagochai.stage);
+      const temperature = getIdealTemperature(tamadachi.genome, tamadachi.stage);
+      const maxTokens = getIdealMaxTokens(tamadachi.genome, tamadachi.stage);
 
       // 6. Appel LLM avec streaming
       let fullResponse = '';
@@ -302,6 +302,7 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
 
       // 7. Fallback si pas de streaming
       if (!fullResponse) {
+        log.warn('Streaming returned empty, trying non-streaming...');
         const response = await chat(
           enrichedPrompt,
           chatHistory.slice(0, -1),
@@ -315,7 +316,7 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
       // 8. Stocker la réponse
       if (fullResponse) {
         await processAssistantResponse(
-          tamagochai.id,
+          tamadachi.id,
           result.conversationId,
           fullResponse,
           { provider: getPreferredProvider() },
@@ -323,12 +324,12 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
       }
 
       // 9. Refresh complet
-      const updatedTama = await getTamagochai();
+      const updatedTama = await getTamadachi();
       const finalMessages = await getActiveMessages();
       const newEmotion = updateEmotion();
 
       set({
-        tamagochai: updatedTama,
+        tamadachi: updatedTama,
         messages: finalMessages,
         emotion: newEmotion,
         hormones: getCurrentLevels(),
@@ -377,10 +378,10 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
   // ============================================================
 
   refreshState: async () => {
-    const tama = await getTamagochai();
+    const tama = await getTamadachi();
     if (tama) {
       set({
-        tamagochai: tama,
+        tamadachi: tama,
         emotion: getCurrentEmotion(),
         hormones: getCurrentLevels(),
         batteryLevel: getBatteryLevel(),
@@ -395,9 +396,9 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
   },
 
   getProgressData: async () => {
-    const { tamagochai } = get();
-    if (!tamagochai) return null;
-    return getProgressSummary(tamagochai.id);
+    const { tamadachi } = get();
+    if (!tamadachi) return null;
+    return getProgressSummary(tamadachi.id);
   },
 
   getEmotionalSummary: () => getEmotionalSummary(),
@@ -416,7 +417,7 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
 // INIT ALL SERVICES (incluant métacognition)
 // ============================================================
 
-async function initAllServices(tama: Tamagochai): Promise<void> {
+async function initAllServices(tama: Tamadachi): Promise<void> {
   // Core
   await initHormones(tama.id);
   log.info('✅ Hormones');

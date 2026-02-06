@@ -1,5 +1,5 @@
 // src/services/core/HormoneService.ts
-// Service hormonal du TamagochAI — MVP COMPLET
+// Service hormonal du TamadachAI — MVP COMPLET
 //
 // Ce service gère le système hormonal en temps réel :
 // - Applique le decay naturel (retour au baseline)
@@ -19,7 +19,7 @@ import {
   PredefinedModifier,
   HormoneSnapshot,
 } from '../../types';
-import { Genome } from '../../types/tamagochai';
+import { Genome } from '../../types/tamadachi';
 import {
   HORMONE_CONFIGS,
   DEFAULT_HORMONE_LEVELS,
@@ -52,7 +52,7 @@ const log = createLogger('Hormones');
 
 let cachedLevels: HormoneLevels | null = null;
 let cachedLastDecayAt: string | null = null;
-let cachedTamagochaiId: string | null = null;
+let cachedTamadachiId: string | null = null;
 
 // ============================================================
 // INITIALISATION
@@ -61,14 +61,14 @@ let cachedTamagochaiId: string | null = null;
 /**
  * Charge l'état hormonal depuis la DB (ou initialise avec les défauts)
  */
-export async function initHormones(tamagochaiId: string): Promise<HormoneLevels> {
+export async function initHormones(tamadachiId: string): Promise<HormoneLevels> {
   try {
-    const state = await getHormoneState(tamagochaiId);
+    const state = await getHormoneState(tamadachiId);
 
     if (state) {
       cachedLevels = { ...state.levels };
       cachedLastDecayAt = state.lastDecayAt;
-      cachedTamagochaiId = tamagochaiId;
+      cachedTamadachiId = tamadachiId;
       log.info('Hormones loaded from DB:', cachedLevels);
 
       // Appliquer le decay accumulé depuis le dernier update
@@ -76,13 +76,13 @@ export async function initHormones(tamagochaiId: string): Promise<HormoneLevels>
       if (minutesSinceLastDecay > 1) {
         log.info(`Applying ${minutesSinceLastDecay.toFixed(0)} minutes of accumulated decay`);
         cachedLevels = applyDecayToAll(cachedLevels, minutesSinceLastDecay);
-        await persistState(tamagochaiId, 'accumulated_decay');
+        await persistState(tamadachiId, 'accumulated_decay');
       }
     } else {
       // Premier lancement — utiliser les défauts
       cachedLevels = { ...DEFAULT_HORMONE_LEVELS };
       cachedLastDecayAt = now();
-      cachedTamagochaiId = tamagochaiId;
+      cachedTamadachiId = tamadachiId;
       log.info('Hormones initialized with defaults');
     }
 
@@ -91,7 +91,7 @@ export async function initHormones(tamagochaiId: string): Promise<HormoneLevels>
     log.error('Failed to init hormones:', error);
     cachedLevels = { ...DEFAULT_HORMONE_LEVELS };
     cachedLastDecayAt = now();
-    cachedTamagochaiId = tamagochaiId;
+    cachedTamadachiId = tamadachiId;
     return { ...cachedLevels };
   }
 }
@@ -174,7 +174,7 @@ export function getDominant(): HormoneType {
  * Intègre automatiquement la personnalité si un génome est fourni
  */
 export async function triggerEvent(
-  tamagochaiId: string,
+  tamadachiId: string,
   event: PredefinedModifier,
   genome?: Genome,
 ): Promise<HormoneLevels> {
@@ -201,7 +201,7 @@ export async function triggerEvent(
   }
 
   // Persister et historiser
-  await persistState(tamagochaiId, event);
+  await persistState(tamadachiId, event);
 
   log.info(`After ${event}:`, formatLevelsShort(cachedLevels!));
   return { ...cachedLevels! };
@@ -211,12 +211,12 @@ export async function triggerEvent(
  * Applique plusieurs événements en séquence
  */
 export async function triggerEvents(
-  tamagochaiId: string,
+  tamadachiId: string,
   events: PredefinedModifier[],
   genome?: Genome,
 ): Promise<HormoneLevels> {
   for (const event of events) {
-    await triggerEvent(tamagochaiId, event, genome);
+    await triggerEvent(tamadachiId, event, genome);
   }
   return getCurrentLevels();
 }
@@ -230,7 +230,7 @@ export async function triggerEvents(
  * Utile pour des effets spécifiques au contexte
  */
 export async function applyCustom(
-  tamagochaiId: string,
+  tamadachiId: string,
   modifiers: HormoneModifier[],
   genome?: Genome,
   eventLabel: string = 'custom',
@@ -246,7 +246,7 @@ export async function applyCustom(
     : modifiers;
 
   cachedLevels = applyCustomModifiers(cachedLevels!, finalModifiers);
-  await persistState(tamagochaiId, eventLabel);
+  await persistState(tamadachiId, eventLabel);
 
   return { ...cachedLevels! };
 }
@@ -255,14 +255,14 @@ export async function applyCustom(
  * Modifie directement une seule hormone
  */
 export async function adjustSingleHormone(
-  tamagochaiId: string,
+  tamadachiId: string,
   hormone: HormoneType,
   delta: number,
   source: string,
   genome?: Genome,
 ): Promise<HormoneLevels> {
   return applyCustom(
-    tamagochaiId,
+    tamadachiId,
     [{ hormone, delta, source }],
     genome,
     source,
@@ -277,7 +277,7 @@ export async function adjustSingleHormone(
  * Applique le decay naturel des hormones
  * Appelé périodiquement (timer) ou avant chaque lecture importante
  */
-export async function applyDecay(tamagochaiId: string): Promise<HormoneLevels> {
+export async function applyDecay(tamadachiId: string): Promise<HormoneLevels> {
   ensureInitialized();
 
   if (!cachedLastDecayAt) {
@@ -297,7 +297,7 @@ export async function applyDecay(tamagochaiId: string): Promise<HormoneLevels> {
   cachedLastDecayAt = now();
 
   // Persister sans historiser (le decay est silencieux)
-  await saveHormoneState(tamagochaiId, cachedLevels!);
+  await saveHormoneState(tamadachiId, cachedLevels!);
 
   return { ...cachedLevels! };
 }
@@ -374,22 +374,22 @@ export function analyzeMessageForHormones(
  * Applique les effets de la batterie sur les hormones
  */
 export async function applyBatteryEffect(
-  tamagochaiId: string,
+  tamadachiId: string,
   batteryLevel: number,
   isCharging: boolean,
   genome?: Genome,
 ): Promise<void> {
   if (isCharging) {
-    await triggerEvent(tamagochaiId, 'battery_charging', genome);
+    await triggerEvent(tamadachiId, 'battery_charging', genome);
     return;
   }
 
   if (batteryLevel <= 0.05) {
-    await triggerEvent(tamagochaiId, 'battery_critical', genome);
+    await triggerEvent(tamadachiId, 'battery_critical', genome);
   } else if (batteryLevel <= 0.15) {
-    await triggerEvent(tamagochaiId, 'battery_low', genome);
+    await triggerEvent(tamadachiId, 'battery_low', genome);
   } else if (batteryLevel >= 0.95) {
-    await triggerEvent(tamagochaiId, 'battery_full', genome);
+    await triggerEvent(tamadachiId, 'battery_full', genome);
   }
 }
 
@@ -397,12 +397,12 @@ export async function applyBatteryEffect(
  * Applique les effets du moment de la journée
  */
 export async function applyTimeOfDayEffect(
-  tamagochaiId: string,
+  tamadachiId: string,
   hour: number,
   genome?: Genome,
 ): Promise<void> {
   if (hour >= 0 && hour < 6) {
-    await triggerEvent(tamagochaiId, 'night_time', genome);
+    await triggerEvent(tamadachiId, 'night_time', genome);
   }
 }
 
@@ -424,12 +424,12 @@ function ensureInitialized(): void {
 /**
  * Persiste l'état et ajoute à l'historique
  */
-async function persistState(tamagochaiId: string, triggerEvent: string): Promise<void> {
+async function persistState(tamadachiId: string, triggerEvent: string): Promise<void> {
   try {
     if (!cachedLevels) return;
 
-    await saveHormoneState(tamagochaiId, cachedLevels);
-    await addHormoneHistoryEntry(tamagochaiId, cachedLevels, triggerEvent);
+    await saveHormoneState(tamadachiId, cachedLevels);
+    await addHormoneHistoryEntry(tamadachiId, cachedLevels, triggerEvent);
     cachedLastDecayAt = now();
   } catch (error) {
     log.error('Failed to persist hormone state:', error);
@@ -450,10 +450,10 @@ function formatLevelsShort(levels: HormoneLevels): string {
 /**
  * Reset les hormones aux valeurs par défaut
  */
-export async function resetHormones(tamagochaiId: string): Promise<HormoneLevels> {
+export async function resetHormones(tamadachiId: string): Promise<HormoneLevels> {
   cachedLevels = { ...DEFAULT_HORMONE_LEVELS };
   cachedLastDecayAt = now();
-  await saveHormoneState(tamagochaiId, cachedLevels);
+  await saveHormoneState(tamadachiId, cachedLevels);
   log.info('Hormones reset to defaults');
   return { ...cachedLevels };
 }
@@ -462,12 +462,12 @@ export async function resetHormones(tamagochaiId: string): Promise<HormoneLevels
  * Force des niveaux spécifiques (pour debug)
  */
 export async function forceHormoneLevels(
-  tamagochaiId: string,
+  tamadachiId: string,
   levels: Partial<HormoneLevels>,
 ): Promise<HormoneLevels> {
   ensureInitialized();
   cachedLevels = clampAllLevels({ ...cachedLevels!, ...levels });
-  await persistState(tamagochaiId, 'forced');
+  await persistState(tamadachiId, 'forced');
   log.info('Hormones forced to:', formatLevelsShort(cachedLevels));
   return { ...cachedLevels };
 }

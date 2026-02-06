@@ -1,5 +1,5 @@
 // src/services/core/ConversationService.ts
-// Service de conversation du TamagochAI — MVP COMPLET
+// Service de conversation du TamadachAI — MVP COMPLET
 //
 // C'est l'ORCHESTRATEUR principal. Quand l'humain envoie un message :
 // 1. Le message est stocké en DB
@@ -22,7 +22,7 @@ import {
   HormoneLevels,
   EmotionType,
 } from '../../types';
-import { EvolutionStage, Genome } from '../../types/tamagochai';
+import { EvolutionStage, Genome } from '../../types/tamadachi';
 import { CONVERSATION_CONFIG } from '../../constants/config';
 import { EVOLUTION_STAGES } from '../../constants/evolution';
 import {
@@ -40,7 +40,7 @@ import {
 
 // Database
 import {
-  getTamagochai,
+  getTamadachi,
   createConversation,
   getActiveConversation,
   endConversation,
@@ -50,8 +50,8 @@ import {
   getRecentMessages,
   countMessages,
   getLastMessage,
-  incrementTamagochaiStat,
-  updateTamagochai,
+  incrementTamadachiStat,
+  updateTamadachi,
   upsertDailyStats,
 } from '../database/DatabaseService';
 
@@ -116,10 +116,10 @@ let lastMessageTime: string | null = null;
  * Initialise le service de conversation
  * Vérifie s'il y a une conversation active, en crée une si nécessaire
  */
-export async function initConversation(tamagochaiId: string): Promise<string> {
+export async function initConversation(tamadachiId: string): Promise<string> {
   try {
     // Vérifier s'il y a une conversation active
-    const existing = await getActiveConversation(tamagochaiId);
+    const existing = await getActiveConversation(tamadachiId);
 
     if (existing) {
       // Vérifier si elle est trop vieille (timeout d'inactivité)
@@ -142,13 +142,13 @@ export async function initConversation(tamagochaiId: string): Promise<string> {
     }
 
     // Créer une nouvelle conversation
-    const newId = await createConversation(tamagochaiId);
+    const newId = await createConversation(tamadachiId);
     activeConversationId = newId;
     sessionStartTime = now();
     messageCountThisSession = 0;
 
     // Incrémenter le compteur de conversations
-    await incrementTamagochaiStat(tamagochaiId, 'total_conversations');
+    await incrementTamadachiStat(tamadachiId, 'total_conversations');
 
     log.info(`New conversation created: ${newId}`);
     return newId;
@@ -169,7 +169,7 @@ export async function initConversation(tamagochaiId: string): Promise<string> {
  * Retourne le contexte LLM prêt à être envoyé au provider
  */
 export async function processUserMessage(
-  tamagochaiId: string,
+  tamadachiId: string,
   content: string,
   batteryLevel?: number,
   isCharging?: boolean,
@@ -185,12 +185,12 @@ export async function processUserMessage(
   evolutionMessage: string | null;
   streakInfo: { days: number; bonusLabel: string | null } | null;
 }> {
-  const tama = await getTamagochai();
-  if (!tama) throw new Error('No TamagochAI found');
+  const tama = await getTamadachi();
+  if (!tama) throw new Error('No TamadachAI found');
 
   // S'assurer qu'on a une conversation active
   if (!activeConversationId) {
-    await initConversation(tamagochaiId);
+    await initConversation(tamadachiId);
   }
   const conversationId = activeConversationId!;
 
@@ -217,11 +217,11 @@ export async function processUserMessage(
   messageCountThisSession++;
   lastMessageTime = now();
   await incrementConversationStat(conversationId, 'message_count');
-  await incrementTamagochaiStat(tamagochaiId, 'total_messages');
+  await incrementTamadachiStat(tamadachiId, 'total_messages');
 
   // ---- ÉTAPE 2 : Extraire les souvenirs ----
   const memoryResult = await processMessageForMemories(
-    tamagochaiId,
+    tamadachiId,
     content,
     'user',
     conversationId,
@@ -232,28 +232,28 @@ export async function processUserMessage(
     await incrementConversationStat(conversationId, 'memories_created', memoryResult.memoriesCreated);
     // XP bonus pour création de souvenirs
     for (let i = 0; i < memoryResult.memoriesCreated; i++) {
-      await awardXP(tamagochaiId, 'memory_created', { genome: tama.genome });
+      await awardXP(tamadachiId, 'memory_created', { genome: tama.genome });
     }
   }
 
   // ---- ÉTAPE 3 : Appliquer le decay hormonal ----
-  await applyDecay(tamagochaiId);
+  await applyDecay(tamadachiId);
 
   // ---- ÉTAPE 4 : Modifier les hormones selon le message ----
   const hormoneEvents = analyzeMessageForHormones(content, firstOfDay, minutesSinceLastMessage);
-  await triggerEvents(tamagochaiId, hormoneEvents, tama.genome);
+  await triggerEvents(tamadachiId, hormoneEvents, tama.genome);
 
   // ---- ÉTAPE 5 : Recalculer l'émotion ----
   const newEmotion = updateEmotion();
 
   // ---- ÉTAPE 6 : Attribuer l'XP ----
   const xpSources = analyzeMessageForXP(content, firstOfDay, messageCountThisSession);
-  const xpResult = await awardMultipleXP(tamagochaiId, xpSources, tama.genome);
+  const xpResult = await awardMultipleXP(tamadachiId, xpSources, tama.genome);
 
   // ---- ÉTAPE 7 : Gérer le streak ----
   let streakInfo: { days: number; bonusLabel: string | null } | null = null;
   if (firstOfDay) {
-    const streak = await updateStreak(tamagochaiId);
+    const streak = await updateStreak(tamadachiId);
     streakInfo = {
       days: streak.currentStreak,
       bonusLabel: streak.bonusLabel,
@@ -262,22 +262,22 @@ export async function processUserMessage(
   }
 
   // ---- ÉTAPE 8 : Mettre à jour les stats quotidiennes ----
-  await upsertDailyStats(tamagochaiId, {
+  await upsertDailyStats(tamadachiId, {
     messages_sent: 1,
     xp_earned: xpResult.totalAwarded,
     memories_created: memoryResult.memoriesCreated,
   });
 
-  // ---- ÉTAPE 9 : Mettre à jour l'état du TamagochAI ----
-  await updateTamagochai(tamagochaiId, {
+  // ---- ÉTAPE 9 : Mettre à jour l'état du TamadachAI ----
+  await updateTamadachi(tamadachiId, {
     current_emotion: newEmotion.primary,
     current_mood: getMood().label,
     last_interaction: now(),
   });
 
   // ---- ÉTAPE 10 : Assembler le contexte LLM ----
-  const context = await buildConversationContext(tamagochaiId, content, batteryLevel, isCharging);
-  const systemPrompt = await buildSystemPrompt(tamagochaiId, content, batteryLevel);
+  const context = await buildConversationContext(tamadachiId, content, batteryLevel, isCharging);
+  const systemPrompt = await buildSystemPrompt(tamadachiId, content, batteryLevel);
 
   log.info(`User message processed — Emotion: ${newEmotion.primary}, XP: +${xpResult.totalAwarded}, Memories: +${memoryResult.memoriesCreated}`);
 
@@ -303,7 +303,7 @@ export async function processUserMessage(
  * Stocke la réponse du LLM et traite ses souvenirs
  */
 export async function processAssistantResponse(
-  tamagochaiId: string,
+  tamadachiId: string,
   conversationId: string,
   content: string,
   meta?: {
@@ -326,7 +326,7 @@ export async function processAssistantResponse(
   // Extraire les souvenirs de la réponse de l'IA aussi
   // (ex: si l'IA dit quelque chose d'important sur la relation)
   await processMessageForMemories(
-    tamagochaiId,
+    tamadachiId,
     content,
     'assistant',
     conversationId,
@@ -338,14 +338,14 @@ export async function processAssistantResponse(
   await incrementConversationStat(conversationId, 'message_count');
 
   // Stats quotidiennes
-  await upsertDailyStats(tamagochaiId, {
+  await upsertDailyStats(tamadachiId, {
     messages_received: 1,
   });
 
   // XP pour émotion ressentie (si l'émotion a changé)
   const currentEmotion = getCurrentEmotion();
   if (currentEmotion.intensity >= 60) {
-    await awardXP(tamagochaiId, 'emotion_felt');
+    await awardXP(tamadachiId, 'emotion_felt');
   }
 
   return messageId;
@@ -359,13 +359,13 @@ export async function processAssistantResponse(
  * Construit le contexte complet pour le LLM
  */
 async function buildConversationContext(
-  tamagochaiId: string,
+  tamadachiId: string,
   currentMessage: string,
   batteryLevel?: number,
   isCharging?: boolean,
 ): Promise<ConversationContext> {
-  const tama = await getTamagochai();
-  if (!tama) throw new Error('No TamagochAI found');
+  const tama = await getTamadachi();
+  if (!tama) throw new Error('No TamadachAI found');
 
   // Messages récents
   const recentMessages = activeConversationId
@@ -374,13 +374,13 @@ async function buildConversationContext(
 
   // Souvenirs pertinents
   const relevantMemories = await getFormattedRelevantMemories(
-    tamagochaiId,
+    tamadachiId,
     currentMessage,
     CONVERSATION_CONFIG.context.maxRelevantMemories,
   );
 
   // Faits sur l'utilisateur
-  const userFacts = await getUserFacts(tamagochaiId);
+  const userFacts = await getUserFacts(tamadachiId);
   const userName = userFacts.find(m => m.content.includes("s'appelle"))?.content.split("s'appelle ")[1] || 'inconnu';
   const userInterests = userFacts
     .filter(m => m.type === 'preference')
@@ -388,7 +388,7 @@ async function buildConversationContext(
     .slice(0, 5);
 
   return {
-    tamagochaiName: tama.name,
+    tamadachiName: tama.name,
     stage: tama.stage,
     emotion: getCurrentEmotion().primary,
     personality: tama.genome,
@@ -412,12 +412,12 @@ async function buildConversationContext(
  * Construit le prompt système complet, prêt à envoyer au LLM
  */
 async function buildSystemPrompt(
-  tamagochaiId: string,
+  tamadachiId: string,
   currentMessage: string,
   batteryLevel?: number,
 ): Promise<string> {
-  const tama = await getTamagochai();
-  if (!tama) throw new Error('No TamagochAI found');
+  const tama = await getTamadachi();
+  if (!tama) throw new Error('No TamadachAI found');
 
   const hormones = getCurrentLevels();
   const emotion = getCurrentEmotion();
@@ -427,13 +427,13 @@ async function buildSystemPrompt(
 
   // Récupérer les souvenirs formatés
   const memoriesText = await getFormattedRelevantMemories(
-    tamagochaiId,
+    tamadachiId,
     currentMessage,
     CONVERSATION_CONFIG.context.maxRelevantMemories,
   );
 
   // Infos utilisateur
-  const userFacts = await getUserFacts(tamagochaiId);
+  const userFacts = await getUserFacts(tamadachiId);
   const userName = userFacts.find(m => m.content.includes("s'appelle"))?.content.split("s'appelle ")[1] || 'inconnu';
   const userInterests = userFacts
     .filter(m => m.type === 'preference')

@@ -1,7 +1,7 @@
 // src/constants/hormones.ts
-// Système hormonal complet du TamagochAI — MVP COMPLET
+// Système hormonal complet du TamadachAI — MVP COMPLET
 //
-// Le TamagochAI possède 6 hormones virtuelles qui fonctionnent
+// Le TamadachAI possède 6 hormones virtuelles qui fonctionnent
 // comme des hormones biologiques :
 // - Chaque hormone a un baseline (niveau de repos)
 // - Chaque hormone décroît naturellement vers son baseline (half-life)

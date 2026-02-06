@@ -1,5 +1,5 @@
 // src/services/core/PersonalityService.ts
-// Service de personnalité du TamagochAI — MVP COMPLET
+// Service de personnalité du TamadachAI — MVP COMPLET
 //
 // La personnalité est déterminée par le GÉNOME (immuable, généré à la naissance)
 // et le STADE D'ÉVOLUTION (qui change avec l'XP).
@@ -27,7 +27,7 @@ const log = createLogger('Personality');
 // ============================================================
 
 /**
- * Génère un nouveau génome aléatoire pour un TamagochAI
+ * Génère un nouveau génome aléatoire pour un TamadachAI
  * Utilise une distribution gaussienne pour des personnalités réalistes
  */
 export function generateGenome(): Genome {
@@ -291,8 +291,8 @@ function determineNaturalInterests(genome: Genome): string[] {
 
 /**
  * Calcule comment le génome modifie la réactivité hormonale
- * Un TamagochAI très émotionnel aura des réactions hormonales plus fortes
- * Un TamagochAI stoïque aura des réactions plus atténuées
+ * Un TamadachAI très émotionnel aura des réactions hormonales plus fortes
+ * Un TamadachAI stoïque aura des réactions plus atténuées
  */
 export function getHormoneReactivity(genome: Genome): {
   positiveMultiplier: number;  // Multiplicateur pour les hormones positives

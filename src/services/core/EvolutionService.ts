@@ -1,5 +1,5 @@
 // src/services/core/EvolutionService.ts
-// Service d'évolution du TamagochAI — MVP COMPLET
+// Service d'évolution du TamadachAI — MVP COMPLET
 //
 // Ce service gère toute la progression :
 // - Attribution d'XP selon les interactions
@@ -9,7 +9,7 @@
 // - Mode XP (production, prototype, debug)
 //
 // L'évolution est le cœur de l'expérience : chaque interaction
-// compte, chaque message fait grandir le TamagochAI.
+// compte, chaque message fait grandir le TamadachAI.
 
 import {
   EvolutionStage,
@@ -19,7 +19,7 @@ import {
   EvolutionProgress,
   XPMode,
 } from '../../types/evolution';
-import { Genome } from '../../types/tamagochai';
+import { Genome } from '../../types/tamadachi';
 import {
   EVOLUTION_STAGES,
   STAGE_ORDER,
@@ -37,9 +37,9 @@ import {
   getEvolutionMessage,
 } from '../../constants/evolution';
 import {
-  getTamagochai,
-  updateTamagochai,
-  incrementTamagochaiStat,
+  getTamadachi,
+  updateTamadachi,
+  incrementTamadachiStat,
   recordXPEvent,
   recordEvolutionEvent,
   getXPThisHour,
@@ -118,7 +118,7 @@ export function getXPModeConfig() {
  * Retourne le résultat complet du gain
  */
 export async function awardXP(
-  tamagochaiId: string,
+  tamadachiId: string,
   source: XPSource,
   options?: {
     customAmount?: number;
@@ -136,10 +136,10 @@ export async function awardXP(
   evolutionData: { from: EvolutionStage; to: EvolutionStage; message: string } | null;
 }> {
   try {
-    // Récupérer le TamagochAI
-    const tama = await getTamagochai();
+    // Récupérer le TamadachAI
+    const tama = await getTamadachi();
     if (!tama) {
-      log.error('No TamagochAI found for XP award');
+      log.error('No TamadachAI found for XP award');
       return makeEmptyResult();
     }
 
@@ -175,9 +175,9 @@ export async function awardXP(
     if (options?.skipAntiGrind) {
       finalAmount = baseAmount * XP_MODES[currentXPMode].multiplier;
     } else {
-      const xpThisHour = await getXPThisHour(tamagochaiId);
-      const xpToday = await getXPToday(tamagochaiId);
-      const consecutiveGains = await getConsecutiveXPGains(tamagochaiId);
+      const xpThisHour = await getXPThisHour(tamadachiId);
+      const xpToday = await getXPToday(tamadachiId);
+      const consecutiveGains = await getConsecutiveXPGains(tamadachiId);
 
       const result = calculateFinalXP(
         baseAmount,
@@ -208,7 +208,7 @@ export async function awardXP(
     // Enregistrer le gain d'XP
     const description = XP_REWARDS[source]?.description || source;
     await recordXPEvent(
-      tamagochaiId,
+      tamadachiId,
       source,
       baseAmount,
       XP_MODES[currentXPMode].multiplier,
@@ -218,7 +218,7 @@ export async function awardXP(
 
     // Mettre à jour le total XP
     const newTotalXP = tama.totalXP + finalAmount;
-    await updateTamagochai(tamagochaiId, { total_xp: newTotalXP });
+    await updateTamadachi(tamadachiId, { total_xp: newTotalXP });
     lastXPGainTime = now();
 
     log.info(`XP awarded: +${finalAmount} (base: ${baseAmount}, mode: x${XP_MODES[currentXPMode].multiplier}) → Total: ${newTotalXP}`);
@@ -229,7 +229,7 @@ export async function awardXP(
 
     if (evolution.shouldEvolve && evolution.newStage) {
       evolutionData = await executeEvolution(
-        tamagochaiId,
+        tamadachiId,
         tama.name,
         tama.stage,
         evolution.newStage,
@@ -257,7 +257,7 @@ export async function awardXP(
  * Attribue de l'XP pour plusieurs sources en une fois
  */
 export async function awardMultipleXP(
-  tamagochaiId: string,
+  tamadachiId: string,
   sources: XPSource[],
   genome?: Genome,
 ): Promise<{ totalAwarded: number; evolved: boolean }> {
@@ -265,7 +265,7 @@ export async function awardMultipleXP(
   let evolved = false;
 
   for (const source of sources) {
-    const result = await awardXP(tamagochaiId, source, { genome });
+    const result = await awardXP(tamadachiId, source, { genome });
     totalAwarded += result.finalAmount;
     if (result.evolved) evolved = true;
   }
@@ -281,7 +281,7 @@ export async function awardMultipleXP(
  * Exécute une transition de stade
  */
 async function executeEvolution(
-  tamagochaiId: string,
+  tamadachiId: string,
   name: string,
   fromStage: EvolutionStage,
   toStage: EvolutionStage,
@@ -290,13 +290,13 @@ async function executeEvolution(
   log.info(`🌟 EVOLUTION: ${fromStage} → ${toStage} at ${totalXP} XP!`);
 
   // Compter les stats actuelles
-  const memoriesCount = await countMemories(tamagochaiId);
-  const tama = await getTamagochai();
+  const memoriesCount = await countMemories(tamadachiId);
+  const tama = await getTamadachi();
   const conversationsCount = tama?.stats.totalConversations || 0;
 
   // Enregistrer l'événement d'évolution
   await recordEvolutionEvent(
-    tamagochaiId,
+    tamadachiId,
     fromStage,
     toStage,
     totalXP,
@@ -304,14 +304,14 @@ async function executeEvolution(
     conversationsCount,
   );
 
-  // Mettre à jour le stade du TamagochAI
-  await updateTamagochai(tamagochaiId, {
+  // Mettre à jour le stade du TamadachAI
+  await updateTamadachi(tamadachiId, {
     stage: toStage,
     stage_started_at: now(),
   });
 
   // Déclencher les effets hormonaux de l'évolution
-  await triggerEvent(tamagochaiId, 'evolution_up');
+  await triggerEvent(tamadachiId, 'evolution_up');
 
   // Générer le message d'évolution
   const message = getEvolutionMessage(name, fromStage, toStage);
@@ -326,8 +326,8 @@ async function executeEvolution(
 /**
  * Retourne la progression actuelle vers le prochain stade
  */
-export async function getProgress(tamagochaiId: string): Promise<EvolutionProgress> {
-  const tama = await getTamagochai();
+export async function getProgress(tamadachiId: string): Promise<EvolutionProgress> {
+  const tama = await getTamadachi();
   if (!tama) {
     return {
       currentStage: 'emergence',
@@ -347,7 +347,7 @@ export async function getProgress(tamagochaiId: string): Promise<EvolutionProgre
 /**
  * Retourne un résumé de la progression pour l'UI
  */
-export async function getProgressSummary(tamagochaiId: string): Promise<{
+export async function getProgressSummary(tamadachiId: string): Promise<{
   stage: EvolutionStage;
   stageName: string;
   stageEmoji: string;
@@ -360,8 +360,8 @@ export async function getProgressSummary(tamagochaiId: string): Promise<{
   xpMode: XPMode;
   xpMultiplier: number;
 }> {
-  const tama = await getTamagochai();
-  const progress = await getProgress(tamagochaiId);
+  const tama = await getTamadachi();
+  const progress = await getProgress(tamadachiId);
   const stageConfig = EVOLUTION_STAGES[progress.currentStage];
 
   return {
@@ -387,14 +387,14 @@ export async function getProgressSummary(tamagochaiId: string): Promise<{
  * Met à jour le streak (jours consécutifs d'interaction)
  * Appelé au premier message de chaque session
  */
-export async function updateStreak(tamagochaiId: string): Promise<{
+export async function updateStreak(tamadachiId: string): Promise<{
   currentStreak: number;
   bonusAwarded: boolean;
   bonusAmount: number;
   bonusLabel: string | null;
 }> {
   try {
-    const tama = await getTamagochai();
+    const tama = await getTamadachi();
     if (!tama) return { currentStreak: 0, bonusAwarded: false, bonusAmount: 0, bonusLabel: null };
 
     const lastInteraction = tama.stats.lastInteraction;
@@ -428,7 +428,7 @@ export async function updateStreak(tamagochaiId: string): Promise<{
 
     // Mettre à jour en DB
     const longestStreak = Math.max(newStreak, tama.stats.longestStreak);
-    await updateTamagochai(tamagochaiId, {
+    await updateTamadachi(tamadachiId, {
       current_streak: newStreak,
       longest_streak: longestStreak,
       last_interaction: now(),
@@ -441,7 +441,7 @@ export async function updateStreak(tamagochaiId: string): Promise<{
     let bonusLabel: string | null = null;
 
     if (bonus) {
-      const result = await awardXP(tamagochaiId, 'streak_bonus', {
+      const result = await awardXP(tamadachiId, 'streak_bonus', {
         customAmount: bonus.bonus,
         skipAntiGrind: true,  // Les bonus de streak ne sont pas limités
       });
@@ -523,8 +523,8 @@ export function analyzeMessageForXP(
 /**
  * Retourne la config du stade actuel
  */
-export async function getCurrentStageConfig(tamagochaiId: string) {
-  const tama = await getTamagochai();
+export async function getCurrentStageConfig(tamadachiId: string) {
+  const tama = await getTamadachi();
   const stage = tama?.stage || 'emergence';
   return (EVOLUTION_STAGES as Record<string, any>)[stage];
 }
@@ -532,8 +532,8 @@ export async function getCurrentStageConfig(tamagochaiId: string) {
 /**
  * Retourne le prompt style du stade actuel
  */
-export async function getCurrentPromptStyle(tamagochaiId: string): Promise<string> {
-  const config = await getCurrentStageConfig(tamagochaiId);
+export async function getCurrentPromptStyle(tamadachiId: string): Promise<string> {
+  const config = await getCurrentStageConfig(tamadachiId);
   return config.promptStyle;
 }
 
@@ -541,18 +541,18 @@ export async function getCurrentPromptStyle(tamagochaiId: string): Promise<strin
  * Vérifie si une feature est débloquée au stade actuel
  */
 export async function isFeatureUnlocked(
-  tamagochaiId: string,
+  tamadachiId: string,
   feature: string,
 ): Promise<boolean> {
-  const config = await getCurrentStageConfig(tamagochaiId);
+  const config = await getCurrentStageConfig(tamadachiId);
   return config.unlockedFeatures.includes(feature);
 }
 
 /**
  * Retourne le vocabulaire max du stade actuel
  */
-export async function getMaxVocabulary(tamagochaiId: string): Promise<number> {
-  const config = await getCurrentStageConfig(tamagochaiId);
+export async function getMaxVocabulary(tamadachiId: string): Promise<number> {
+  const config = await getCurrentStageConfig(tamadachiId);
   return config.maxVocabulary;
 }
 
@@ -564,9 +564,9 @@ export async function getMaxVocabulary(tamagochaiId: string): Promise<number> {
  * Force une évolution (pour debug)
  */
 export async function forceEvolution(
-  tamagochaiId: string,
+  tamadachiId: string,
 ): Promise<{ from: EvolutionStage; to: EvolutionStage; message: string } | null> {
-  const tama = await getTamagochai();
+  const tama = await getTamadachi();
   if (!tama) return null;
 
   const next = getNextStage(tama.stage);
@@ -576,20 +576,20 @@ export async function forceEvolution(
   }
 
   const xpNeeded = EVOLUTION_STAGES[next].xpRequired;
-  await updateTamagochai(tamagochaiId, { total_xp: xpNeeded });
+  await updateTamadachi(tamadachiId, { total_xp: xpNeeded });
 
-  return executeEvolution(tamagochaiId, tama.name, tama.stage, next, xpNeeded);
+  return executeEvolution(tamadachiId, tama.name, tama.stage, next, xpNeeded);
 }
 
 /**
  * Force un stade spécifique (pour debug)
  */
 export async function forceStage(
-  tamagochaiId: string,
+  tamadachiId: string,
   stage: EvolutionStage,
 ): Promise<void> {
   const xpNeeded = (EVOLUTION_STAGES as any)[stage].xpRequired;
-  await updateTamagochai(tamagochaiId, {
+  await updateTamadachi(tamadachiId, {
     stage,
     total_xp: xpNeeded,
     stage_started_at: now(),

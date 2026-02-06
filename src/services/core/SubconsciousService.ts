@@ -1,7 +1,7 @@
 // src/services/core/SubconsciousService.ts
-// Service de Subconscient du TamagochAI — MVP COMPLET
+// Service de Subconscient du TamadachAI — MVP COMPLET
 //
-// Le subconscient est la "pensée autonome" du TamagochAI.
+// Le subconscient est la "pensée autonome" du TamadachAI.
 // Il fonctionne en arrière-plan et génère des pensées internes
 // qui influencent les futures conversations.
 //
@@ -12,7 +12,7 @@
 // - L'anticipation (attente du retour de l'utilisateur)
 // - L'alimentation du flux de conscience pour le prompt LLM
 //
-// Philosophie : Le TamagochAI ne pense pas QUE quand on lui parle.
+// Philosophie : Le TamadachAI ne pense pas QUE quand on lui parle.
 // Il pense entre les messages. Ces pensées colorent ses réponses.
 
 import {
@@ -33,7 +33,7 @@ import {
 import { getBatteryDescription } from '../sensors/BatteryService';
 import { chat as llmChat } from '../llm/LLMOrchestrator';
 import {
-  getTamagochai,
+  getTamadachi,
   getMessages,
   setSetting,
   getSetting,
@@ -161,7 +161,7 @@ async function thinkingCycle(): Promise<void> {
 async function determineThoughtType(): Promise<ThoughtType> {
   if (!tamaId) return 'reflection';
 
-  const tama = await getTamagochai();
+  const tama = await getTamadachi();
   if (!tama) return 'reflection';
 
   const emotion = getCurrentEmotion();
@@ -251,7 +251,7 @@ async function generateThought(type: ThoughtType): Promise<InternalThought | nul
  * Construit le contexte pour la génération de pensée
  */
 async function buildThoughtContext(): Promise<ThoughtContext> {
-  const tama = await getTamagochai();
+  const tama = await getTamadachi();
   const emotion = getCurrentEmotion();
   const hormones = getCurrentLevels();
   const mood = getMood();
@@ -286,7 +286,7 @@ async function buildThoughtContext(): Promise<ThoughtContext> {
     timeOfDay,
     batteryState: getBatteryDescription(),
     stage: tama?.stage || 'emergence',
-    name: tama?.name || 'TamagochAI',
+    name: tama?.name || 'TamadachAI',
   };
 }
 

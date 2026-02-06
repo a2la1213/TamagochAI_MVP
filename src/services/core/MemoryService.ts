@@ -1,5 +1,5 @@
 // src/services/core/MemoryService.ts
-// Service de mémoire du TamagochAI — MVP COMPLET
+// Service de mémoire du TamadachAI — MVP COMPLET
 //
 // Ce service gère la mémoire à long terme :
 // - Extraction automatique de souvenirs depuis les messages
@@ -29,7 +29,7 @@ import {
   updateMemory,
   countMemories,
   memoryExists,
-  incrementTamagochaiStat,
+  incrementTamadachiStat,
 } from '../database/DatabaseService';
 import {
   createLogger,
@@ -194,7 +194,7 @@ export function extractMemoriesFromMessage(
 
   // ---- FLASH MEMORIES (émotionnel peak) ----
   if (hormones && isEmotionalPeak(hormones)) {
-    // Si le TamagochAI est en pic émotionnel, transformer le souvenir le plus important en flash
+    // Si le TamadachAI est en pic émotionnel, transformer le souvenir le plus important en flash
     const bestMemory = memories.sort((a, b) => b.importance - a.importance)[0];
     if (bestMemory) {
       bestMemory.importance = 10;
@@ -225,20 +225,20 @@ export function extractMemoriesFromMessage(
  * Stocke un souvenir extrait (avec vérification anti-doublon)
  */
 export async function storeMemory(
-  tamagochaiId: string,
+  tamadachiId: string,
   memory: ExtractedMemory,
   sourceConversationId?: string,
   sourceMessageId?: string,
 ): Promise<string | null> {
   try {
     // Anti-doublon
-    const exists = await memoryExists(tamagochaiId, memory.content);
+    const exists = await memoryExists(tamadachiId, memory.content);
     if (exists) {
       log.debug(`Memory already exists, skipping: ${truncate(memory.content, 50)}`);
       return null;
     }
 
-    const id = await createMemory(tamagochaiId, memory.type, memory.content, {
+    const id = await createMemory(tamadachiId, memory.type, memory.content, {
       importance: memory.importance,
       emotionalWeight: memory.emotionalWeight,
       isFlash: memory.type === 'flash',
@@ -246,8 +246,8 @@ export async function storeMemory(
       sourceMessageId,
     });
 
-    // Mettre à jour le compteur de mémoires du TamagochAI
-    await incrementTamagochaiStat(tamagochaiId, 'total_memories');
+    // Mettre à jour le compteur de mémoires du TamadachAI
+    await incrementTamadachiStat(tamadachiId, 'total_memories');
 
     log.info(`Stored [${memory.type}] (importance: ${memory.importance}): ${truncate(memory.content, 60)}`);
     return id;
@@ -262,7 +262,7 @@ export async function storeMemory(
  * C'est la fonction appelée par le ConversationService après chaque message
  */
 export async function processMessageForMemories(
-  tamagochaiId: string,
+  tamadachiId: string,
   message: string,
   role: 'user' | 'assistant',
   conversationId: string,
@@ -273,7 +273,7 @@ export async function processMessageForMemories(
   const created: string[] = [];
 
   for (const memory of extracted) {
-    const id = await storeMemory(tamagochaiId, memory, conversationId, messageId);
+    const id = await storeMemory(tamadachiId, memory, conversationId, messageId);
     if (id) {
       created.push(memory.content);
     }
@@ -291,7 +291,7 @@ export async function processMessageForMemories(
  * Utilise la recherche FTS5 + les top memories
  */
 export async function findRelevantMemories(
-  tamagochaiId: string,
+  tamadachiId: string,
   message: string,
   limit: number = 10,
 ): Promise<Memory[]> {
@@ -303,7 +303,7 @@ export async function findRelevantMemories(
   if (keywords.length > 0) {
     const searchQuery = keywords.join(' OR ');
     try {
-      const ftsResults = await searchMemories(tamagochaiId, searchQuery, Math.ceil(limit / 2));
+      const ftsResults = await searchMemories(tamadachiId, searchQuery, Math.ceil(limit / 2));
       for (const mem of ftsResults) {
         if (!seenIds.has(mem.id)) {
           results.push(mem);
@@ -318,7 +318,7 @@ export async function findRelevantMemories(
   // 2. Compléter avec les top memories (les plus importants)
   const remaining = limit - results.length;
   if (remaining > 0) {
-    const topMemories = await getTopMemories(tamagochaiId, remaining + 5);
+    const topMemories = await getTopMemories(tamadachiId, remaining + 5);
     for (const mem of topMemories) {
       if (!seenIds.has(mem.id) && results.length < limit) {
         results.push(mem);
@@ -343,11 +343,11 @@ export async function findRelevantMemories(
  * Récupère les souvenirs par type
  */
 export async function getMemoriesByType(
-  tamagochaiId: string,
+  tamadachiId: string,
   type: MemoryType,
   limit: number = 20,
 ): Promise<Memory[]> {
-  return queryMemories(tamagochaiId, {
+  return queryMemories(tamadachiId, {
     type,
     orderBy: 'importance',
     limit,
@@ -357,18 +357,18 @@ export async function getMemoriesByType(
 /**
  * Récupère tous les faits connus sur l'humain
  */
-export async function getUserFacts(tamagochaiId: string): Promise<Memory[]> {
-  const facts = await getMemoriesByType(tamagochaiId, 'fact');
-  const relationships = await getMemoriesByType(tamagochaiId, 'relationship');
-  const preferences = await getMemoriesByType(tamagochaiId, 'preference');
+export async function getUserFacts(tamadachiId: string): Promise<Memory[]> {
+  const facts = await getMemoriesByType(tamadachiId, 'fact');
+  const relationships = await getMemoriesByType(tamadachiId, 'relationship');
+  const preferences = await getMemoriesByType(tamadachiId, 'preference');
   return [...facts, ...relationships, ...preferences].sort((a, b) => b.importance - a.importance);
 }
 
 /**
  * Récupère les flash memories (souvenirs les plus forts)
  */
-export async function getFlashMemories(tamagochaiId: string): Promise<Memory[]> {
-  return queryMemories(tamagochaiId, {
+export async function getFlashMemories(tamadachiId: string): Promise<Memory[]> {
+  return queryMemories(tamadachiId, {
     type: 'flash',
     orderBy: 'importance',
     limit: 20,
@@ -433,11 +433,11 @@ export function formatMemoriesForPrompt(memories: Memory[]): string {
  * Pipeline complet : cherche les souvenirs pertinents et les formate
  */
 export async function getFormattedRelevantMemories(
-  tamagochaiId: string,
+  tamadachiId: string,
   message: string,
   limit: number = 10,
 ): Promise<string> {
-  const memories = await findRelevantMemories(tamagochaiId, message, limit);
+  const memories = await findRelevantMemories(tamadachiId, message, limit);
   return formatMemoriesForPrompt(memories);
 }
 
@@ -450,9 +450,9 @@ export async function getFormattedRelevantMemories(
  * - Réduit l'importance des souvenirs non-flash avec le temps
  * - Marque les souvenirs consolidés
  */
-export async function consolidateMemories(tamagochaiId: string): Promise<number> {
+export async function consolidateMemories(tamadachiId: string): Promise<number> {
   try {
-    const allMemories = await queryMemories(tamagochaiId, {
+    const allMemories = await queryMemories(tamadachiId, {
       orderBy: 'recent',
       limit: 500,
     });
@@ -502,24 +502,24 @@ export async function consolidateMemories(tamagochaiId: string): Promise<number>
 /**
  * Retourne les stats de mémoire pour l'UI
  */
-export async function getMemoryStats(tamagochaiId: string): Promise<{
+export async function getMemoryStats(tamadachiId: string): Promise<{
   total: number;
   byType: Record<MemoryType, number>;
   flashCount: number;
   avgImportance: number;
 }> {
-  const total = await countMemories(tamagochaiId);
+  const total = await countMemories(tamadachiId);
 
   const types: MemoryType[] = ['fact', 'event', 'emotion', 'preference', 'relationship', 'topic', 'flash'];
   const byType: Record<string, number> = {};
 
   for (const type of types) {
-    const memories = await queryMemories(tamagochaiId, { type, limit: 1000 });
+    const memories = await queryMemories(tamadachiId, { type, limit: 1000 });
     byType[type] = memories.length;
   }
 
-  const flashMemories = await getFlashMemories(tamagochaiId);
-  const allMemories = await queryMemories(tamagochaiId, { limit: 1000 });
+  const flashMemories = await getFlashMemories(tamadachiId);
+  const allMemories = await queryMemories(tamadachiId, { limit: 1000 });
   const avgImportance = allMemories.length > 0
     ? allMemories.reduce((sum, m) => sum + m.importance, 0) / allMemories.length
     : 0;
@@ -572,10 +572,10 @@ export function getMemoryServiceInfo(): string {
 /**
  * Retourne les N souvenirs les plus importants
  */
-export async function getTopMemories(tamagochaiId: string, count: number = 5): Promise<Memory[]> {
+export async function getTopMemories(tamadachiId: string, count: number = 5): Promise<Memory[]> {
   try {
-    const allMemories = await getMemoriesByType(tamagochaiId, 'fact');
-    const flashMemories = await getFlashMemories(tamagochaiId);
+    const allMemories = await getMemoriesByType(tamadachiId, 'fact');
+    const flashMemories = await getFlashMemories(tamadachiId);
     const combined = [...flashMemories, ...allMemories];
 
     // Trier par importance (score) décroissant
@@ -590,12 +590,12 @@ export async function getTopMemories(tamagochaiId: string, count: number = 5): P
 /**
  * Retourne les N souvenirs les plus récents
  */
-export async function getRecentMemories(tamagochaiId: string, count: number = 5): Promise<Memory[]> {
+export async function getRecentMemories(tamadachiId: string, count: number = 5): Promise<Memory[]> {
   try {
-    const stats = await getMemoryStats(tamagochaiId);
+    const stats = await getMemoryStats(tamadachiId);
     // Utiliser findRelevantMemories avec un terme vide pour obtenir les récents
-    const all = await getMemoriesByType(tamagochaiId, 'event');
-    const facts = await getUserFacts(tamagochaiId);
+    const all = await getMemoriesByType(tamadachiId, 'event');
+    const facts = await getUserFacts(tamadachiId);
     const combined = [...all, ...facts];
 
     // Trier par date décroissante
@@ -610,6 +610,6 @@ export async function getRecentMemories(tamagochaiId: string, count: number = 5)
 /**
  * Recherche des souvenirs par mot-clé
  */
-export async function searchMemories(tamagochaiId: string, query: string, count: number = 5): Promise<Memory[]> {
-  return findRelevantMemories(tamagochaiId, query, count);
+export async function searchMemories(tamadachiId: string, query: string, count: number = 5): Promise<Memory[]> {
+  return findRelevantMemories(tamadachiId, query, count);
 }

@@ -17,7 +17,7 @@ function ChatBubbleInner({ message, isStreaming }: ChatBubbleProps) {
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
       <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
-        <Text style={[styles.text, isUser ? styles.userText : styles.assistantText]}>
+        <Text selectable style={[styles.text, isUser ? styles.userText : styles.assistantText]}>
           {message.content}
           {isStreaming && <Text style={styles.cursor}>▌</Text>}
         </Text>

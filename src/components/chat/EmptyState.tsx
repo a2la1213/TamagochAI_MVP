@@ -4,14 +4,14 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { THEME } from '../../constants/config';
-import { useTamagochaiData, useEmotion } from '../../hooks';
+import { useTamadachiData, useEmotion } from '../../hooks';
 
 interface EmptyStateProps {
   onSuggestionTap?: (text: string) => void;
 }
 
 export function EmptyState({ onSuggestionTap }: EmptyStateProps) {
-  const { name, stage } = useTamagochaiData();
+  const { name, stage } = useTamadachiData();
   const { emoji } = useEmotion();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;

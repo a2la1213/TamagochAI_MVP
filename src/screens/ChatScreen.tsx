@@ -12,7 +12,7 @@ import {
   Text,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useChat, useTamagochaiData, useEmotion, useBattery, useEvolution } from '../hooks';
+import { useChat, useTamadachiData, useEmotion, useBattery, useEvolution } from '../hooks';
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
 import { TypingIndicator } from '../components/chat/TypingIndicator';
@@ -31,7 +31,7 @@ type Screen = 'chat' | 'settings' | 'stats';
 
 export function ChatScreen() {
   const { messages, isGenerating, streamingText, error, sendMessage, clearError } = useChat();
-  const { name, stage } = useTamagochaiData();
+  const { name, stage } = useTamadachiData();
   const { emoji: emotionEmoji } = useEmotion();
   const { percent: batteryPercent, isCharging } = useBattery();
   const flatListRef = useRef<FlatList>(null);

@@ -1,10 +1,10 @@
-// src/components/avatar/TamagochaiAvatar.tsx
-// Avatar animé du TamagochAI
+// src/components/avatar/TamadachiAvatar.tsx
+// Avatar animé du TamadachAI
 // Réagit aux émotions, au stade d'évolution et à la batterie
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
-import { useEmotion, useBattery, useEvolution, useTamagochaiData } from '../../hooks';
+import { useEmotion, useBattery, useEvolution, useTamadachiData } from '../../hooks';
 import { THEME } from '../../constants/config';
 import { EVOLUTION_STAGES } from '../../constants/evolution';
 import { EMOTION_CONFIGS } from '../../constants/emotions';
@@ -14,11 +14,11 @@ interface AvatarProps {
   showLabel?: boolean;
 }
 
-export function TamagochaiAvatar({ size = 120, showLabel = true }: AvatarProps) {
+export function TamadachiAvatar({ size = 120, showLabel = true }: AvatarProps) {
   const { primary, intensity, emoji: emotionEmoji } = useEmotion();
   const { percent, isCharging } = useBattery();
   const { stage } = useEvolution();
-  const { name } = useTamagochaiData();
+  const { name } = useTamadachiData();
 
   // Animations
   const bounceAnim = useRef(new Animated.Value(1)).current;

@@ -1,5 +1,5 @@
 // src/services/llm/LLMOrchestrator.ts
-// Orchestrateur LLM du TamagochAI — MVP v3 CLEAN
+// Orchestrateur LLM du TamadachAI — MVP v3 CLEAN
 //
 // Supporte 5 providers via LLMProviderInstance interface.
 // Gère fallback, retry, streaming, stats.
@@ -140,7 +140,8 @@ export async function chat(
 
   for (const providerName of providerOrder) {
     const provider = providers.get(providerName);
-    if (!provider || !provider.isAvailable()) {
+    if (!provider || !provider.getApiKey()) {
+      log.warn(`Skipping ${providerName} — no API key`);
       continue;
     }
 

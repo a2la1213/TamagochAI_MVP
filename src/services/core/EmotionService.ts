@@ -1,5 +1,5 @@
 // src/services/core/EmotionService.ts
-// Service émotionnel du TamagochAI — MVP COMPLET
+// Service émotionnel du TamadachAI — MVP COMPLET
 //
 // Ce service fait le pont entre le système hormonal (interne, numérique)
 // et l'expression émotionnelle (visible, expérientielle).
@@ -14,7 +14,7 @@ import {
   EmotionState,
   HormoneLevels,
 } from '../../types';
-import { AvatarExpression } from '../../types/tamagochai';
+import { AvatarExpression } from '../../types/tamadachi';
 import {
   EMOTION_CONFIGS,
   EMOTION_FORMULAS,
@@ -210,7 +210,7 @@ export function isEmotionallyCharged(message: string): boolean {
 }
 
 /**
- * Détermine le "ton" approprié pour la réponse du TamagochAI
+ * Détermine le "ton" approprié pour la réponse du TamadachAI
  * basé sur son état émotionnel actuel
  */
 export function getResponseTone(): {

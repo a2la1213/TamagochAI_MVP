@@ -1,7 +1,7 @@
 // src/services/core/NotificationService.ts
-// Service de Notifications Proactives du TamagochAI — MVP COMPLET
+// Service de Notifications Proactives du TamadachAI — MVP COMPLET
 //
-// Le TamagochAI DÉCIDE quand envoyer une notification.
+// Le TamadachAI DÉCIDE quand envoyer une notification.
 // Ce n'est pas aléatoire — c'est piloté par son état interne.
 //
 // Types de notifications :
@@ -16,7 +16,7 @@ import * as Notifications from 'expo-notifications';
 import {
   getSetting,
   setSetting,
-  getTamagochai,
+  getTamadachi,
 } from '../database/DatabaseService';
 import { getCurrentEmotion } from './EmotionService';
 import { getCurrentLevels } from './HormoneService';
@@ -137,7 +137,7 @@ async function evaluateNotification(): Promise<void> {
   // Pas de notifications la nuit (23h - 7h)
   if (hourNow >= 23 || hourNow < 7) return;
 
-  const tama = await getTamagochai();
+  const tama = await getTamadachi();
   if (!tama) return;
 
   const emotion = getCurrentEmotion();
@@ -303,7 +303,7 @@ export function areNotificationsEnabled(): boolean {
  * Force l'envoi d'une notification (pour tests)
  */
 export async function forceNotification(message: string): Promise<void> {
-  const tama = await getTamagochai();
-  const name = tama?.name || 'TamagochAI';
+  const tama = await getTamadachi();
+  const name = tama?.name || 'TamadachAI';
   await sendNotification(name, message, 'thought');
 }

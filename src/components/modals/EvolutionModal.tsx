@@ -1,5 +1,5 @@
 // src/components/modals/EvolutionModal.tsx
-// Modal d'évolution — affiché quand le TamagochAI change de stade
+// Modal d'évolution — affiché quand le TamadachAI change de stade
 
 import React, { useEffect, useRef } from 'react';
 import {

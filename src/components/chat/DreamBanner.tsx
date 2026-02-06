@@ -1,5 +1,5 @@
 // src/components/chat/DreamBanner.tsx
-// Bandeau affiché quand le TamagochAI a un rêve à raconter
+// Bandeau affiché quand le TamadachAI a un rêve à raconter
 
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';

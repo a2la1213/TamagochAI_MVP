@@ -1,8 +1,8 @@
 // src/types/evolution.ts
 // Système d'évolution et XP — MVP COMPLET
 
-export type { EvolutionStage } from './tamagochai';
-import type { EvolutionStage } from './tamagochai';
+export type { EvolutionStage } from './tamadachi';
+import type { EvolutionStage } from './tamadachi';
 
 // ============================================================
 // SOURCES D'XP

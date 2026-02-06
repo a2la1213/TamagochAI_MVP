@@ -13,7 +13,7 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSettings, useTamagochaiData, useEvolution } from '../hooks';
+import { useSettings, useTamadachiData, useEvolution } from '../hooks';
 import { THEME } from '../constants/config';
 import { LLMProviderName } from '../types';
 
@@ -133,7 +133,7 @@ interface SettingsScreenProps {
 
 export function SettingsScreen({ onClose }: SettingsScreenProps) {
   const { setApiKey, setPreferredProvider, setXPMode, getLLMInfo } = useSettings();
-  const { tamagochai, genome } = useTamagochaiData();
+  const { tamadachi, genome } = useTamadachiData();
   const { stage, totalXP } = useEvolution();
 
   const llmInfo = getLLMInfo();
@@ -155,15 +155,15 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
 
-        {/* Section TamagochAI */}
-        {tamagochai && (
+        {/* Section TamadachAI */}
+        {tamadachi && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🧬 Mon TamagochAI</Text>
+            <Text style={styles.sectionTitle}>🧬 Mon TamadachAI</Text>
             <View style={styles.infoCard}>
-              <InfoRow label="Nom" value={tamagochai.name} />
+              <InfoRow label="Nom" value={tamadachi.name} />
               <InfoRow label="Stade" value={`${stage} (${totalXP} XP)`} />
-              <InfoRow label="Jours de vie" value={`${tamagochai.stats?.totalDays || 0}`} />
-              <InfoRow label="Messages échangés" value={`${tamagochai.stats?.totalMessages || 0}`} />
+              <InfoRow label="Jours de vie" value={`${tamadachi.stats?.totalDays || 0}`} />
+              <InfoRow label="Messages échangés" value={`${tamadachi.stats?.totalMessages || 0}`} />
               {genome && (
                 <>
                   <View style={styles.separator} />
@@ -183,7 +183,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🤖 Providers LLM</Text>
           <Text style={styles.sectionDescription}>
-            Configure au moins un provider pour que ton TamagochAI puisse te parler.
+            Configure au moins un provider pour que ton TamadachAI puisse te parler.
             Gemini est gratuit !
           </Text>
           {llmInfo.all.map((provider: any) => (
@@ -243,7 +243,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>TamagochAI MVP — v0.1.0</Text>
+          <Text style={styles.footerText}>TamadachAI MVP — v0.1.0</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

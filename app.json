@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TamagochAI",
-    "slug": "tamagochai",
+    "name": "TamadachAI",
+    "slug": "tamadachi",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.tamagochai.app",
+      "bundleIdentifier": "com.tamadachi.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
@@ -29,7 +29,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0F172A"
       },
-      "package": "com.tamagochai.app",
+      "package": "com.tamadachi.app",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",

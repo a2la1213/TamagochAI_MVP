@@ -1,5 +1,5 @@
-// src/types/tamagochai.ts
-// Types principaux du TamagochAI — MVP COMPLET
+// src/types/tamadachi.ts
+// Types principaux du TamadachAI — MVP COMPLET
 
 // ============================================================
 // GÉNOME (ADN de l'IA — généré à la naissance, immuable)
@@ -53,7 +53,7 @@ export interface AvatarConfig {
 // ============================================================
 // STATISTIQUES
 // ============================================================
-export interface TamagochaiStats {
+export interface TamadachiStats {
   totalMessages: number;
   totalConversations: number;
   totalMemories: number;
@@ -71,7 +71,7 @@ export interface TamagochaiStats {
 // ============================================================
 // ENTITÉ PRINCIPALE
 // ============================================================
-export interface Tamagochai {
+export interface Tamadachi {
   id: string;
   name: string;
   birthDate: string;
@@ -91,7 +91,7 @@ export interface Tamagochai {
   avatar: AvatarConfig;
 
   // Stats
-  stats: TamagochaiStats;
+  stats: TamadachiStats;
 
   // Méta
   isAlive: boolean;
@@ -102,7 +102,7 @@ export interface Tamagochai {
 // ============================================================
 // CRÉATION
 // ============================================================
-export interface CreateTamagochaiData {
+export interface CreateTamadachiData {
   name: string;
   avatarType: AvatarType;
   avatarStyle: AvatarStyle;
@@ -112,7 +112,7 @@ export interface CreateTamagochaiData {
 // ============================================================
 // MISE À JOUR
 // ============================================================
-export interface UpdateTamagochaiData {
+export interface UpdateTamadachiData {
   name?: string;
   stage?: EvolutionStage;
   totalXP?: number;

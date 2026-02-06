@@ -2,7 +2,7 @@
 // Migration initiale — Création de toutes les tables
 //
 // TABLES :
-// 1. tamagochai        — L'entité principale (1 seul row pour le MVP)
+// 1. tamadachi        — L'entité principale (1 seul row pour le MVP)
 // 2. conversations     — Historique des conversations
 // 3. messages          — Messages de chaque conversation
 // 4. memories          — Souvenirs extraits (avec FTS5)
@@ -17,7 +17,7 @@ export const MIGRATION_001 = `
 -- ============================================================
 -- TABLE 1: TAMAGOCHAI (entité principale)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS tamagochai (
+CREATE TABLE IF NOT EXISTS tamadachi (
   id TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
   birth_date TEXT NOT NULL DEFAULT (datetime('now')),
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS tamagochai (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS conversations (
   id TEXT PRIMARY KEY NOT NULL,
-  tamagochai_id TEXT NOT NULL,
+  tamadachi_id TEXT NOT NULL,
   title TEXT,
   summary TEXT,
   topics TEXT DEFAULT '[]',
@@ -82,11 +82,11 @@ CREATE TABLE IF NOT EXISTS conversations (
   ended_at TEXT,
   end_reason TEXT,
   
-  FOREIGN KEY (tamagochai_id) REFERENCES tamagochai(id) ON DELETE CASCADE
+  FOREIGN KEY (tamadachi_id) REFERENCES tamadachi(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_conversations_tamagochai 
-  ON conversations(tamagochai_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_tamadachi 
+  ON conversations(tamadachi_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_active 
   ON conversations(is_active);
 CREATE INDEX IF NOT EXISTS idx_conversations_created 
@@ -136,7 +136,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_role
 -- ============================================================
 CREATE TABLE IF NOT EXISTS memories (
   id TEXT PRIMARY KEY NOT NULL,
-  tamagochai_id TEXT NOT NULL,
+  tamadachi_id TEXT NOT NULL,
   type TEXT NOT NULL CHECK(type IN ('fact', 'event', 'emotion', 'preference', 'relationship', 'topic', 'flash')),
   content TEXT NOT NULL,
   context TEXT,
@@ -158,12 +158,12 @@ CREATE TABLE IF NOT EXISTS memories (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   
-  FOREIGN KEY (tamagochai_id) REFERENCES tamagochai(id) ON DELETE CASCADE,
+  FOREIGN KEY (tamadachi_id) REFERENCES tamadachi(id) ON DELETE CASCADE,
   FOREIGN KEY (source_conversation_id) REFERENCES conversations(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_memories_tamagochai 
-  ON memories(tamagochai_id);
+CREATE INDEX IF NOT EXISTS idx_memories_tamadachi 
+  ON memories(tamadachi_id);
 CREATE INDEX IF NOT EXISTS idx_memories_type 
   ON memories(type);
 CREATE INDEX IF NOT EXISTS idx_memories_importance 
@@ -203,7 +203,7 @@ END;
 -- ============================================================
 CREATE TABLE IF NOT EXISTS hormone_state (
   id INTEGER PRIMARY KEY CHECK (id = 1),
-  tamagochai_id TEXT NOT NULL,
+  tamadachi_id TEXT NOT NULL,
   
   dopamine REAL NOT NULL DEFAULT 60,
   serotonin REAL NOT NULL DEFAULT 55,
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS hormone_state (
   last_decay_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   
-  FOREIGN KEY (tamagochai_id) REFERENCES tamagochai(id) ON DELETE CASCADE
+  FOREIGN KEY (tamadachi_id) REFERENCES tamadachi(id) ON DELETE CASCADE
 );
 
 -- ============================================================
@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS hormone_state (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS hormone_history (
   id TEXT PRIMARY KEY NOT NULL,
-  tamagochai_id TEXT NOT NULL,
+  tamadachi_id TEXT NOT NULL,
   
   dopamine REAL NOT NULL,
   serotonin REAL NOT NULL,
@@ -235,11 +235,11 @@ CREATE TABLE IF NOT EXISTS hormone_history (
   trigger_event TEXT NOT NULL,
   recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
   
-  FOREIGN KEY (tamagochai_id) REFERENCES tamagochai(id) ON DELETE CASCADE
+  FOREIGN KEY (tamadachi_id) REFERENCES tamadachi(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_hormone_history_tamagochai 
-  ON hormone_history(tamagochai_id);
+CREATE INDEX IF NOT EXISTS idx_hormone_history_tamadachi 
+  ON hormone_history(tamadachi_id);
 CREATE INDEX IF NOT EXISTS idx_hormone_history_recorded 
   ON hormone_history(recorded_at DESC);
 
@@ -248,7 +248,7 @@ CREATE INDEX IF NOT EXISTS idx_hormone_history_recorded
 -- ============================================================
 CREATE TABLE IF NOT EXISTS xp_events (
   id TEXT PRIMARY KEY NOT NULL,
-  tamagochai_id TEXT NOT NULL,
+  tamadachi_id TEXT NOT NULL,
   source TEXT NOT NULL,
   amount INTEGER NOT NULL,
   multiplier REAL NOT NULL DEFAULT 1,
@@ -256,11 +256,11 @@ CREATE TABLE IF NOT EXISTS xp_events (
   description TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   
-  FOREIGN KEY (tamagochai_id) REFERENCES tamagochai(id) ON DELETE CASCADE
+  FOREIGN KEY (tamadachi_id) REFERENCES tamadachi(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_xp_events_tamagochai 
-  ON xp_events(tamagochai_id);
+CREATE INDEX IF NOT EXISTS idx_xp_events_tamadachi 
+  ON xp_events(tamadachi_id);
 CREATE INDEX IF NOT EXISTS idx_xp_events_created 
   ON xp_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_xp_events_source 
@@ -271,7 +271,7 @@ CREATE INDEX IF NOT EXISTS idx_xp_events_source
 -- ============================================================
 CREATE TABLE IF NOT EXISTS evolution_events (
   id TEXT PRIMARY KEY NOT NULL,
-  tamagochai_id TEXT NOT NULL,
+  tamadachi_id TEXT NOT NULL,
   from_stage TEXT NOT NULL,
   to_stage TEXT NOT NULL,
   total_xp_at_transition INTEGER NOT NULL,
@@ -279,18 +279,18 @@ CREATE TABLE IF NOT EXISTS evolution_events (
   conversations_at_transition INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   
-  FOREIGN KEY (tamagochai_id) REFERENCES tamagochai(id) ON DELETE CASCADE
+  FOREIGN KEY (tamadachi_id) REFERENCES tamadachi(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_evolution_events_tamagochai 
-  ON evolution_events(tamagochai_id);
+CREATE INDEX IF NOT EXISTS idx_evolution_events_tamadachi 
+  ON evolution_events(tamadachi_id);
 
 -- ============================================================
 -- TABLE 9: DAILY_STATS (statistiques journalières)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS daily_stats (
   id TEXT PRIMARY KEY NOT NULL,
-  tamagochai_id TEXT NOT NULL,
+  tamadachi_id TEXT NOT NULL,
   date TEXT NOT NULL,
   
   messages_sent INTEGER NOT NULL DEFAULT 0,
@@ -314,13 +314,13 @@ CREATE TABLE IF NOT EXISTS daily_stats (
   
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   
-  FOREIGN KEY (tamagochai_id) REFERENCES tamagochai(id) ON DELETE CASCADE
+  FOREIGN KEY (tamadachi_id) REFERENCES tamadachi(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_daily_stats_date 
   ON daily_stats(date DESC);
-CREATE INDEX IF NOT EXISTS idx_daily_stats_tamagochai 
-  ON daily_stats(tamagochai_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_daily_stats_tamadachi 
+  ON daily_stats(tamadachi_id, date DESC);
 
 -- ============================================================
 -- TABLE 10: SETTINGS (paramètres key-value)

@@ -18,7 +18,7 @@ export type MemoryType =
 // ============================================================
 export interface Memory {
   id: string;
-  tamagochaiId: string;
+  tamadachiId: string;
   type: MemoryType;
   content: string;          // Le souvenir en texte
   context: string | null;   // Contexte additionnel

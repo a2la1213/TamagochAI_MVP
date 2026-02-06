@@ -39,7 +39,7 @@ export interface Message {
 // ============================================================
 export interface Conversation {
   id: string;
-  tamagochaiId: string;
+  tamadachiId: string;
   title: string | null;
   summary: string | null;
   topics: string[];
@@ -62,7 +62,7 @@ export interface Conversation {
 // CONTEXTE POUR LE LLM
 // ============================================================
 export interface ConversationContext {
-  tamagochaiName: string;
+  tamadachiName: string;
   stage: string;
   emotion: EmotionType;
   personality: {

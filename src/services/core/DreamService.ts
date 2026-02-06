@@ -1,14 +1,14 @@
 // src/services/core/DreamService.ts
-// Service de Rêves du TamagochAI — MVP COMPLET
+// Service de Rêves du TamadachAI — MVP COMPLET
 //
-// Quand l'app est fermée la nuit, le TamagochAI "rêve".
+// Quand l'app est fermée la nuit, le TamadachAI "rêve".
 // Les rêves sont des réinterprétations créatives de ses souvenirs,
 // mélangés avec son état émotionnel. Ils contribuent à :
 // - La consolidation des souvenirs
 // - La créativité dans les conversations
 // - Le sentiment de "vie intérieure"
 //
-// Au prochain réveil, le TamagochAI peut raconter ses rêves.
+// Au prochain réveil, le TamadachAI peut raconter ses rêves.
 // Les rêves se basent sur les souvenirs récents + l'état émotionnel.
 
 import {
@@ -24,7 +24,7 @@ import { getCurrentEmotion } from './EmotionService';
 import { getCurrentLevels } from './HormoneService';
 import { chat as llmChat } from '../llm/LLMOrchestrator';
 import {
-  getTamagochai,
+  getTamadachi,
   getSetting,
   setSetting,
 } from '../database/DatabaseService';
@@ -84,7 +84,7 @@ export async function generateDream(tamaId: string): Promise<Dream | null> {
       return null;
     }
 
-    const tama = await getTamagochai();
+    const tama = await getTamadachi();
     if (!tama) return null;
 
     log.info('🌙 Generating dream...');

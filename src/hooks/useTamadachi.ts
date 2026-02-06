@@ -1,5 +1,5 @@
-// src/hooks/useTamagochai.ts
-// Hooks React custom pour TamagochAI — MVP COMPLET
+// src/hooks/useTamadachi.ts
+// Hooks React custom pour TamadachAI — MVP COMPLET
 //
 // Ces hooks sont des "vues" sur le store Zustand.
 // Chaque hook sélectionne SEULEMENT les données dont
@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { useTamagochaiStore } from '../stores';
+import { useTamadachiStore } from '../stores';
 
 // ============================================================
 // HOOK PRINCIPAL — Initialisation de l'app
@@ -20,11 +20,11 @@ import { useTamagochaiStore } from '../stores';
  * Gère le démarrage et le shutdown propre
  */
 export function useAppLifecycle() {
-  const initialize = useTamagochaiStore(s => s.initialize);
-  const shutdown = useTamagochaiStore(s => s.shutdown);
-  const refreshState = useTamagochaiStore(s => s.refreshState);
-  const isInitialized = useTamagochaiStore(s => s.isInitialized);
-  const isInitializing = useTamagochaiStore(s => s.isInitializing);
+  const initialize = useTamadachiStore(s => s.initialize);
+  const shutdown = useTamadachiStore(s => s.shutdown);
+  const refreshState = useTamadachiStore(s => s.refreshState);
+  const isInitialized = useTamadachiStore(s => s.isInitialized);
+  const isInitializing = useTamadachiStore(s => s.isInitializing);
 
   useEffect(() => {
     initialize();
@@ -57,12 +57,12 @@ export function useAppLifecycle() {
  * Hook pour le chat — sélectionne tout ce dont ChatScreen a besoin
  */
 export function useChat() {
-  const messages = useTamagochaiStore(s => s.messages);
-  const isGenerating = useTamagochaiStore(s => s.isGenerating);
-  const streamingText = useTamagochaiStore(s => s.streamingText);
-  const error = useTamagochaiStore(s => s.error);
-  const sendMessage = useTamagochaiStore(s => s.sendMessage);
-  const clearError = useTamagochaiStore(s => s.clearError);
+  const messages = useTamadachiStore(s => s.messages);
+  const isGenerating = useTamadachiStore(s => s.isGenerating);
+  const streamingText = useTamadachiStore(s => s.streamingText);
+  const error = useTamadachiStore(s => s.error);
+  const sendMessage = useTamadachiStore(s => s.sendMessage);
+  const clearError = useTamadachiStore(s => s.clearError);
 
   return {
     messages,
@@ -79,22 +79,22 @@ export function useChat() {
 // ============================================================
 
 /**
- * Hook pour les données du TamagochAI
+ * Hook pour les données du TamadachAI
  */
-export function useTamagochaiData() {
-  const tamagochai = useTamagochaiStore(s => s.tamagochai);
-  const emotion = useTamagochaiStore(s => s.emotion);
-  const hormones = useTamagochaiStore(s => s.hormones);
-  const isBorn = useTamagochaiStore(s => s.isBorn);
+export function useTamadachiData() {
+  const tamadachi = useTamadachiStore(s => s.tamadachi);
+  const emotion = useTamadachiStore(s => s.emotion);
+  const hormones = useTamadachiStore(s => s.hormones);
+  const isBorn = useTamadachiStore(s => s.isBorn);
 
   return {
-    tamagochai,
-    name: tamagochai?.name || '',
-    stage: tamagochai?.stage || 'emergence',
-    totalXP: tamagochai?.totalXP || 0,
-    genome: tamagochai?.genome || null,
-    avatar: tamagochai?.avatar || null,
-    stats: tamagochai?.stats || null,
+    tamadachi,
+    name: tamadachi?.name || '',
+    stage: tamadachi?.stage || 'emergence',
+    totalXP: tamadachi?.totalXP || 0,
+    genome: tamadachi?.genome || null,
+    avatar: tamadachi?.avatar || null,
+    stats: tamadachi?.stats || null,
     emotion,
     hormones,
     isBorn,
@@ -106,16 +106,16 @@ export function useTamagochaiData() {
 // ============================================================
 
 /**
- * Hook pour la création d'un nouveau TamagochAI
+ * Hook pour la création d'un nouveau TamadachAI
  */
 export function useBirth() {
-  const createTamagochai = useTamagochaiStore(s => s.createTamagochai);
-  const isInitializing = useTamagochaiStore(s => s.isInitializing);
-  const error = useTamagochaiStore(s => s.error);
-  const isBorn = useTamagochaiStore(s => s.isBorn);
+  const createTamadachi = useTamadachiStore(s => s.createTamadachi);
+  const isInitializing = useTamadachiStore(s => s.isInitializing);
+  const error = useTamadachiStore(s => s.error);
+  const isBorn = useTamadachiStore(s => s.isBorn);
 
   return {
-    createTamagochai,
+    createTamadachi,
     isCreating: isInitializing,
     error,
     isBorn,
@@ -130,12 +130,12 @@ export function useBirth() {
  * Hook pour les données d'évolution
  */
 export function useEvolution() {
-  const tamagochai = useTamagochaiStore(s => s.tamagochai);
-  const getProgressData = useTamagochaiStore(s => s.getProgressData);
+  const tamadachi = useTamadachiStore(s => s.tamadachi);
+  const getProgressData = useTamadachiStore(s => s.getProgressData);
 
   return {
-    stage: tamagochai?.stage || 'emergence',
-    totalXP: tamagochai?.totalXP || 0,
+    stage: tamadachi?.stage || 'emergence',
+    totalXP: tamadachi?.totalXP || 0,
     getProgressData,
   };
 }
@@ -148,8 +148,8 @@ export function useEvolution() {
  * Hook pour l'état émotionnel
  */
 export function useEmotion() {
-  const emotion = useTamagochaiStore(s => s.emotion);
-  const getEmotionalSummary = useTamagochaiStore(s => s.getEmotionalSummary);
+  const emotion = useTamadachiStore(s => s.emotion);
+  const getEmotionalSummary = useTamadachiStore(s => s.getEmotionalSummary);
 
   return {
     primary: emotion?.primary || 'neutral',
@@ -169,9 +169,9 @@ export function useEmotion() {
  * Hook pour la batterie
  */
 export function useBattery() {
-  const level = useTamagochaiStore(s => s.batteryLevel);
-  const charging = useTamagochaiStore(s => s.batteryCharging);
-  const getBatteryInfo = useTamagochaiStore(s => s.getBatteryInfo);
+  const level = useTamadachiStore(s => s.batteryLevel);
+  const charging = useTamadachiStore(s => s.batteryCharging);
+  const getBatteryInfo = useTamadachiStore(s => s.getBatteryInfo);
 
   return {
     level,
@@ -189,11 +189,11 @@ export function useBattery() {
  * Hook pour les paramètres LLM et app
  */
 export function useSettings() {
-  const setApiKey = useTamagochaiStore(s => s.setApiKey);
-  const setPreferredProvider = useTamagochaiStore(s => s.setPreferredProvider);
-  const setProviderModel = useTamagochaiStore(s => s.setProviderModel);
-  const setXPMode = useTamagochaiStore(s => s.setXPMode);
-  const getLLMInfo = useTamagochaiStore(s => s.getLLMInfo);
+  const setApiKey = useTamadachiStore(s => s.setApiKey);
+  const setPreferredProvider = useTamadachiStore(s => s.setPreferredProvider);
+  const setProviderModel = useTamadachiStore(s => s.setProviderModel);
+  const setXPMode = useTamadachiStore(s => s.setXPMode);
+  const getLLMInfo = useTamadachiStore(s => s.getLLMInfo);
 
   return {
     setApiKey,

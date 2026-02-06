@@ -12,7 +12,7 @@ import { MIGRATION_001 } from './migrations/001_initial';
 import { DB_CONFIG } from '../../constants/config';
 import { createLogger, generateId, now } from '../../utils/helpers';
 import {
-  Tamagochai,
+  Tamadachi,
   Genome,
   EvolutionStage,
   AvatarConfig,
@@ -103,7 +103,7 @@ export async function resetDatabase(): Promise<void> {
       DELETE FROM memories;
       DELETE FROM conversations;
       DELETE FROM hormone_state;
-      DELETE FROM tamagochai;
+      DELETE FROM tamadachi;
       DELETE FROM settings;
     `);
     // Réappliquer la migration pour les settings par défaut
@@ -120,9 +120,9 @@ export async function resetDatabase(): Promise<void> {
 // ============================================================
 
 /**
- * Crée un nouveau TamagochAI
+ * Crée un nouveau TamadachAI
  */
-export async function createTamagochai(
+export async function createTamadachi(
   name: string,
   genome: Genome,
   avatarType: string,
@@ -134,7 +134,7 @@ export async function createTamagochai(
   const timestamp = now();
 
   await db.runAsync(
-    `INSERT INTO tamagochai (
+    `INSERT INTO tamadachi (
       id, name, birth_date,
       genome_social, genome_cognitive, genome_emotional, genome_energy, genome_creativity,
       stage, total_xp, stage_started_at,
@@ -152,33 +152,33 @@ export async function createTamagochai(
 
   // Créer l'état hormonal initial
   await db.runAsync(
-    `INSERT INTO hormone_state (id, tamagochai_id, dopamine, serotonin, oxytocin, cortisol, adrenaline, endorphins, last_decay_at, updated_at)
+    `INSERT INTO hormone_state (id, tamadachi_id, dopamine, serotonin, oxytocin, cortisol, adrenaline, endorphins, last_decay_at, updated_at)
      VALUES (1, ?, 60, 55, 40, 25, 30, 40, ?, ?)`,
     id, timestamp, timestamp,
   );
 
-  log.info(`✅ TamagochAI created: ${name} (${id})`);
+  log.info(`✅ TamadachAI created: ${name} (${id})`);
   return id;
 }
 
 /**
- * Récupère le TamagochAI (il n'y en a qu'un dans le MVP)
+ * Récupère le TamadachAI (il n'y en a qu'un dans le MVP)
  */
-export async function getTamagochai(): Promise<Tamagochai | null> {
+export async function getTamadachi(): Promise<Tamadachi | null> {
   const db = await getDB();
   const row = await db.getFirstAsync<any>(
-    'SELECT * FROM tamagochai WHERE is_alive = 1 LIMIT 1'
+    'SELECT * FROM tamadachi WHERE is_alive = 1 LIMIT 1'
   );
 
   if (!row) return null;
 
-  return mapRowToTamagochai(row);
+  return mapRowToTamadachi(row);
 }
 
 /**
- * Met à jour le TamagochAI
+ * Met à jour le TamadachAI
  */
-export async function updateTamagochai(
+export async function updateTamadachi(
   id: string,
   updates: Record<string, any>,
 ): Promise<void> {
@@ -199,15 +199,15 @@ export async function updateTamagochai(
   values.push(id);
 
   await db.runAsync(
-    `UPDATE tamagochai SET ${fields.join(', ')} WHERE id = ?`,
+    `UPDATE tamadachi SET ${fields.join(', ')} WHERE id = ?`,
     ...values,
   );
 }
 
 /**
- * Met à jour les stats du TamagochAI
+ * Met à jour les stats du TamadachAI
  */
-export async function updateTamagochaiStats(
+export async function updateTamadachiStats(
   id: string,
   stats: Partial<{
     total_messages: number;
@@ -222,20 +222,20 @@ export async function updateTamagochaiStats(
     last_interaction: string;
   }>,
 ): Promise<void> {
-  await updateTamagochai(id, stats);
+  await updateTamadachi(id, stats);
 }
 
 /**
- * Incrémente un compteur du TamagochAI
+ * Incrémente un compteur du TamadachAI
  */
-export async function incrementTamagochaiStat(
+export async function incrementTamadachiStat(
   id: string,
   field: string,
   amount: number = 1,
 ): Promise<void> {
   const db = await getDB();
   await db.runAsync(
-    `UPDATE tamagochai SET ${field} = ${field} + ?, updated_at = ? WHERE id = ?`,
+    `UPDATE tamadachi SET ${field} = ${field} + ?, updated_at = ? WHERE id = ?`,
     amount, now(), id,
   );
 }
@@ -248,7 +248,7 @@ export async function incrementTamagochaiStat(
  * Crée une nouvelle conversation
  */
 export async function createConversation(
-  tamagochaiId: string,
+  tamadachiId: string,
   title?: string,
 ): Promise<string> {
   const db = await getDB();
@@ -256,9 +256,9 @@ export async function createConversation(
   const timestamp = now();
 
   await db.runAsync(
-    `INSERT INTO conversations (id, tamagochai_id, title, is_active, created_at, updated_at)
+    `INSERT INTO conversations (id, tamadachi_id, title, is_active, created_at, updated_at)
      VALUES (?, ?, ?, 1, ?, ?)`,
-    id, tamagochaiId, title || null, timestamp, timestamp,
+    id, tamadachiId, title || null, timestamp, timestamp,
   );
 
   log.info(`Conversation created: ${id}`);
@@ -269,14 +269,14 @@ export async function createConversation(
  * Récupère la conversation active
  */
 export async function getActiveConversation(
-  tamagochaiId: string,
+  tamadachiId: string,
 ): Promise<Conversation | null> {
   const db = await getDB();
   const row = await db.getFirstAsync<any>(
     `SELECT * FROM conversations 
-     WHERE tamagochai_id = ? AND is_active = 1 
+     WHERE tamadachi_id = ? AND is_active = 1 
      ORDER BY updated_at DESC LIMIT 1`,
-    tamagochaiId,
+    tamadachiId,
   );
 
   if (!row) return null;
@@ -287,17 +287,17 @@ export async function getActiveConversation(
  * Liste toutes les conversations
  */
 export async function getConversations(
-  tamagochaiId: string,
+  tamadachiId: string,
   limit: number = 50,
   offset: number = 0,
 ): Promise<Conversation[]> {
   const db = await getDB();
   const rows = await db.getAllAsync<any>(
     `SELECT * FROM conversations 
-     WHERE tamagochai_id = ? 
+     WHERE tamadachi_id = ? 
      ORDER BY updated_at DESC 
      LIMIT ? OFFSET ?`,
-    tamagochaiId, limit, offset,
+    tamadachiId, limit, offset,
   );
 
   return rows.map(mapRowToConversation);
@@ -498,7 +498,7 @@ export async function getLastMessage(
  * Crée un souvenir
  */
 export async function createMemory(
-  tamagochaiId: string,
+  tamadachiId: string,
   type: MemoryType,
   content: string,
   options?: {
@@ -516,12 +516,12 @@ export async function createMemory(
 
   await db.runAsync(
     `INSERT INTO memories (
-      id, tamagochai_id, type, content, context,
+      id, tamadachi_id, type, content, context,
       importance, emotional_weight, is_flash,
       source_conversation_id, source_message_id,
       created_at, updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, tamagochaiId, type, content,
+    id, tamadachiId, type, content,
     options?.context || null,
     options?.importance || 5,
     options?.emotionalWeight || 0,
@@ -539,7 +539,7 @@ export async function createMemory(
  * Recherche dans les souvenirs avec FTS5
  */
 export async function searchMemories(
-  tamagochaiId: string,
+  tamadachiId: string,
   searchText: string,
   limit: number = 10,
 ): Promise<Memory[]> {
@@ -548,10 +548,10 @@ export async function searchMemories(
   const rows = await db.getAllAsync<any>(
     `SELECT m.* FROM memories m
      JOIN memories_fts fts ON m.rowid = fts.rowid
-     WHERE fts.memories_fts MATCH ? AND m.tamagochai_id = ?
+     WHERE fts.memories_fts MATCH ? AND m.tamadachi_id = ?
      ORDER BY rank
      LIMIT ?`,
-    searchText, tamagochaiId, limit,
+    searchText, tamadachiId, limit,
   );
 
   return rows.map(mapRowToMemory);
@@ -561,13 +561,13 @@ export async function searchMemories(
  * Récupère les souvenirs par requête structurée
  */
 export async function queryMemories(
-  tamagochaiId: string,
+  tamadachiId: string,
   query: MemoryQuery,
 ): Promise<Memory[]> {
   const db = await getDB();
 
-  let sql = 'SELECT * FROM memories WHERE tamagochai_id = ?';
-  const params: any[] = [tamagochaiId];
+  let sql = 'SELECT * FROM memories WHERE tamadachi_id = ?';
+  const params: any[] = [tamadachiId];
 
   if (query.type) {
     sql += ' AND type = ?';
@@ -604,16 +604,16 @@ export async function queryMemories(
  * Récupère les souvenirs les plus importants (pour le prompt LLM)
  */
 export async function getTopMemories(
-  tamagochaiId: string,
+  tamadachiId: string,
   limit: number = 10,
 ): Promise<Memory[]> {
   const db = await getDB();
   const rows = await db.getAllAsync<any>(
     `SELECT * FROM memories 
-     WHERE tamagochai_id = ? 
+     WHERE tamadachi_id = ? 
      ORDER BY is_flash DESC, importance DESC, access_count DESC 
      LIMIT ?`,
-    tamagochaiId, limit,
+    tamadachiId, limit,
   );
   return rows.map(mapRowToMemory);
 }
@@ -651,11 +651,11 @@ export async function updateMemory(
 /**
  * Compte les souvenirs
  */
-export async function countMemories(tamagochaiId: string): Promise<number> {
+export async function countMemories(tamadachiId: string): Promise<number> {
   const db = await getDB();
   const row = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM memories WHERE tamagochai_id = ?',
-    tamagochaiId,
+    'SELECT COUNT(*) as count FROM memories WHERE tamadachi_id = ?',
+    tamadachiId,
   );
   return row?.count || 0;
 }
@@ -664,14 +664,14 @@ export async function countMemories(tamagochaiId: string): Promise<number> {
  * Vérifie si un souvenir similaire existe déjà (anti-doublon)
  */
 export async function memoryExists(
-  tamagochaiId: string,
+  tamadachiId: string,
   content: string,
 ): Promise<boolean> {
   const db = await getDB();
   const row = await db.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM memories 
-     WHERE tamagochai_id = ? AND content = ?`,
-    tamagochaiId, content,
+     WHERE tamadachi_id = ? AND content = ?`,
+    tamadachiId, content,
   );
   return (row?.count || 0) > 0;
 }
@@ -684,12 +684,12 @@ export async function memoryExists(
  * Récupère l'état hormonal actuel
  */
 export async function getHormoneState(
-  tamagochaiId: string,
+  tamadachiId: string,
 ): Promise<{ levels: HormoneLevels; lastDecayAt: string } | null> {
   const db = await getDB();
   const row = await db.getFirstAsync<any>(
-    'SELECT * FROM hormone_state WHERE tamagochai_id = ?',
-    tamagochaiId,
+    'SELECT * FROM hormone_state WHERE tamadachi_id = ?',
+    tamadachiId,
   );
 
   if (!row) return null;
@@ -711,7 +711,7 @@ export async function getHormoneState(
  * Sauvegarde l'état hormonal actuel
  */
 export async function saveHormoneState(
-  tamagochaiId: string,
+  tamadachiId: string,
   levels: HormoneLevels,
 ): Promise<void> {
   const db = await getDB();
@@ -722,11 +722,11 @@ export async function saveHormoneState(
       dopamine = ?, serotonin = ?, oxytocin = ?,
       cortisol = ?, adrenaline = ?, endorphins = ?,
       last_decay_at = ?, updated_at = ?
-     WHERE tamagochai_id = ?`,
+     WHERE tamadachi_id = ?`,
     levels.dopamine, levels.serotonin, levels.oxytocin,
     levels.cortisol, levels.adrenaline, levels.endorphins,
     timestamp, timestamp,
-    tamagochaiId,
+    tamadachiId,
   );
 }
 
@@ -734,7 +734,7 @@ export async function saveHormoneState(
  * Ajoute un snapshot hormonal à l'historique
  */
 export async function addHormoneHistoryEntry(
-  tamagochaiId: string,
+  tamadachiId: string,
   levels: HormoneLevels,
   triggerEvent: string,
 ): Promise<void> {
@@ -743,11 +743,11 @@ export async function addHormoneHistoryEntry(
 
   await db.runAsync(
     `INSERT INTO hormone_history (
-      id, tamagochai_id, 
+      id, tamadachi_id, 
       dopamine, serotonin, oxytocin, cortisol, adrenaline, endorphins,
       trigger_event, recorded_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, tamagochaiId,
+    id, tamadachiId,
     levels.dopamine, levels.serotonin, levels.oxytocin,
     levels.cortisol, levels.adrenaline, levels.endorphins,
     triggerEvent, now(),
@@ -758,16 +758,16 @@ export async function addHormoneHistoryEntry(
  * Récupère l'historique hormonal récent
  */
 export async function getHormoneHistory(
-  tamagochaiId: string,
+  tamadachiId: string,
   limit: number = 50,
 ): Promise<HormoneHistoryEntry[]> {
   const db = await getDB();
   const rows = await db.getAllAsync<any>(
     `SELECT * FROM hormone_history 
-     WHERE tamagochai_id = ? 
+     WHERE tamadachi_id = ? 
      ORDER BY recorded_at DESC 
      LIMIT ?`,
-    tamagochaiId, limit,
+    tamadachiId, limit,
   );
 
   return rows.map(row => ({
@@ -793,7 +793,7 @@ export async function getHormoneHistory(
  * Enregistre un gain d'XP
  */
 export async function recordXPEvent(
-  tamagochaiId: string,
+  tamadachiId: string,
   source: XPSource,
   amount: number,
   multiplier: number,
@@ -804,24 +804,24 @@ export async function recordXPEvent(
   const id = generateId();
 
   await db.runAsync(
-    `INSERT INTO xp_events (id, tamagochai_id, source, amount, multiplier, final_amount, description, created_at)
+    `INSERT INTO xp_events (id, tamadachi_id, source, amount, multiplier, final_amount, description, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, tamagochaiId, source, amount, multiplier, finalAmount, description, now(),
+    id, tamadachiId, source, amount, multiplier, finalAmount, description, now(),
   );
 }
 
 /**
  * Calcule l'XP gagné dans l'heure en cours
  */
-export async function getXPThisHour(tamagochaiId: string): Promise<number> {
+export async function getXPThisHour(tamadachiId: string): Promise<number> {
   const db = await getDB();
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
   const row = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(final_amount), 0) as total 
      FROM xp_events 
-     WHERE tamagochai_id = ? AND created_at >= ?`,
-    tamagochaiId, oneHourAgo,
+     WHERE tamadachi_id = ? AND created_at >= ?`,
+    tamadachiId, oneHourAgo,
   );
 
   return row?.total || 0;
@@ -830,7 +830,7 @@ export async function getXPThisHour(tamagochaiId: string): Promise<number> {
 /**
  * Calcule l'XP gagné aujourd'hui
  */
-export async function getXPToday(tamagochaiId: string): Promise<number> {
+export async function getXPToday(tamadachiId: string): Promise<number> {
   const db = await getDB();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -838,8 +838,8 @@ export async function getXPToday(tamagochaiId: string): Promise<number> {
   const row = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(final_amount), 0) as total 
      FROM xp_events 
-     WHERE tamagochai_id = ? AND created_at >= ?`,
-    tamagochaiId, today.toISOString(),
+     WHERE tamadachi_id = ? AND created_at >= ?`,
+    tamadachiId, today.toISOString(),
   );
 
   return row?.total || 0;
@@ -849,7 +849,7 @@ export async function getXPToday(tamagochaiId: string): Promise<number> {
  * Compte les gains d'XP consécutifs récents (pour diminishing returns)
  */
 export async function getConsecutiveXPGains(
-  tamagochaiId: string,
+  tamadachiId: string,
   windowSeconds: number = 60,
 ): Promise<number> {
   const db = await getDB();
@@ -857,8 +857,8 @@ export async function getConsecutiveXPGains(
 
   const row = await db.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM xp_events 
-     WHERE tamagochai_id = ? AND created_at >= ?`,
-    tamagochaiId, since,
+     WHERE tamadachi_id = ? AND created_at >= ?`,
+    tamadachiId, since,
   );
 
   return row?.count || 0;
@@ -872,7 +872,7 @@ export async function getConsecutiveXPGains(
  * Enregistre une transition de stade
  */
 export async function recordEvolutionEvent(
-  tamagochaiId: string,
+  tamadachiId: string,
   fromStage: EvolutionStage,
   toStage: EvolutionStage,
   totalXP: number,
@@ -884,11 +884,11 @@ export async function recordEvolutionEvent(
 
   await db.runAsync(
     `INSERT INTO evolution_events (
-      id, tamagochai_id, from_stage, to_stage,
+      id, tamadachi_id, from_stage, to_stage,
       total_xp_at_transition, memories_at_transition, conversations_at_transition,
       created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, tamagochaiId, fromStage, toStage,
+    id, tamadachiId, fromStage, toStage,
     totalXP, memoriesCount, conversationsCount,
     now(),
   );
@@ -900,14 +900,14 @@ export async function recordEvolutionEvent(
  * Récupère l'historique d'évolution
  */
 export async function getEvolutionHistory(
-  tamagochaiId: string,
+  tamadachiId: string,
 ): Promise<EvolutionEvent[]> {
   const db = await getDB();
   const rows = await db.getAllAsync<any>(
     `SELECT * FROM evolution_events 
-     WHERE tamagochai_id = ? 
+     WHERE tamadachi_id = ? 
      ORDER BY created_at ASC`,
-    tamagochaiId,
+    tamadachiId,
   );
 
   return rows.map(row => ({
@@ -929,7 +929,7 @@ export async function getEvolutionHistory(
  * Crée ou met à jour les stats du jour
  */
 export async function upsertDailyStats(
-  tamagochaiId: string,
+  tamadachiId: string,
   updates: Partial<{
     messages_sent: number;
     messages_received: number;
@@ -943,7 +943,7 @@ export async function upsertDailyStats(
 ): Promise<void> {
   const db = await getDB();
   const today = new Date().toISOString().split('T')[0];
-  const id = `${tamagochaiId}_${today}`;
+  const id = `${tamadachiId}_${today}`;
 
   // Vérifier si le row existe
   const existing = await db.getFirstAsync<any>(
@@ -971,9 +971,9 @@ export async function upsertDailyStats(
       ...values,
     );
   } else {
-    const columns = ['id', 'tamagochai_id', 'date', ...Object.keys(updates)];
+    const columns = ['id', 'tamadachi_id', 'date', ...Object.keys(updates)];
     const placeholders = columns.map(() => '?').join(', ');
-    const values = [id, tamagochaiId, today, ...Object.values(updates)];
+    const values = [id, tamadachiId, today, ...Object.values(updates)];
 
     await db.runAsync(
       `INSERT INTO daily_stats (${columns.join(', ')}) VALUES (${placeholders})`,
@@ -986,16 +986,16 @@ export async function upsertDailyStats(
  * Récupère les stats des N derniers jours
  */
 export async function getDailyStats(
-  tamagochaiId: string,
+  tamadachiId: string,
   days: number = 30,
 ): Promise<any[]> {
   const db = await getDB();
   return db.getAllAsync<any>(
     `SELECT * FROM daily_stats 
-     WHERE tamagochai_id = ? 
+     WHERE tamadachi_id = ? 
      ORDER BY date DESC 
      LIMIT ?`,
-    tamagochaiId, days,
+    tamadachiId, days,
   );
 }
 
@@ -1049,44 +1049,44 @@ export async function getAllSettings(): Promise<Record<string, string>> {
 /**
  * Nettoie les anciennes données selon les limites configurées
  */
-export async function cleanupOldData(tamagochaiId: string): Promise<void> {
+export async function cleanupOldData(tamadachiId: string): Promise<void> {
   const db = await getDB();
   const config = DB_CONFIG.cleanup;
 
   // Limiter l'historique hormonal
   await db.runAsync(
     `DELETE FROM hormone_history 
-     WHERE tamagochai_id = ? AND id NOT IN (
+     WHERE tamadachi_id = ? AND id NOT IN (
        SELECT id FROM hormone_history 
-       WHERE tamagochai_id = ? 
+       WHERE tamadachi_id = ? 
        ORDER BY recorded_at DESC 
        LIMIT ?
      )`,
-    tamagochaiId, tamagochaiId, config.maxHormoneHistory,
+    tamadachiId, tamadachiId, config.maxHormoneHistory,
   );
 
   // Limiter les events XP
   await db.runAsync(
     `DELETE FROM xp_events 
-     WHERE tamagochai_id = ? AND id NOT IN (
+     WHERE tamadachi_id = ? AND id NOT IN (
        SELECT id FROM xp_events 
-       WHERE tamagochai_id = ? 
+       WHERE tamadachi_id = ? 
        ORDER BY created_at DESC 
        LIMIT ?
      )`,
-    tamagochaiId, tamagochaiId, config.maxXPEvents,
+    tamadachiId, tamadachiId, config.maxXPEvents,
   );
 
   // Limiter les daily stats
   await db.runAsync(
     `DELETE FROM daily_stats 
-     WHERE tamagochai_id = ? AND id NOT IN (
+     WHERE tamadachi_id = ? AND id NOT IN (
        SELECT id FROM daily_stats 
-       WHERE tamagochai_id = ? 
+       WHERE tamadachi_id = ? 
        ORDER BY date DESC 
        LIMIT ?
      )`,
-    tamagochaiId, tamagochaiId, config.maxDailyStats,
+    tamadachiId, tamadachiId, config.maxDailyStats,
   );
 
   log.info('🧹 Cleanup complete');
@@ -1096,7 +1096,7 @@ export async function cleanupOldData(tamagochaiId: string): Promise<void> {
 // ROW MAPPERS (SQL row → TypeScript object)
 // ============================================================
 
-function mapRowToTamagochai(row: any): Tamagochai {
+function mapRowToTamadachi(row: any): Tamadachi {
   return {
     id: row.id,
     name: row.name,
@@ -1146,7 +1146,7 @@ function mapRowToTamagochai(row: any): Tamagochai {
 function mapRowToConversation(row: any): Conversation {
   return {
     id: row.id,
-    tamagochaiId: row.tamagochai_id,
+    tamadachiId: row.tamadachi_id,
     title: row.title,
     summary: row.summary,
     topics: row.topics ? JSON.parse(row.topics) : [],
@@ -1189,7 +1189,7 @@ function mapRowToMessage(row: any): Message {
 function mapRowToMemory(row: any): Memory {
   return {
     id: row.id,
-    tamagochaiId: row.tamagochai_id,
+    tamadachiId: row.tamadachi_id,
     type: row.type as MemoryType,
     content: row.content,
     context: row.context,

@@ -1,2 +1,2 @@
-export { useTamagochaiStore } from './useTamagochaiStore';
-export type { TamagochaiState } from './useTamagochaiStore';
+export { useTamadachiStore } from './useTamadachiStore';
+export type { TamadachiState } from './useTamadachiStore';

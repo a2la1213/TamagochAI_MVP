@@ -1,7 +1,7 @@
 // src/services/sensors/BatteryService.ts
-// Service de batterie du TamagochAI — MVP COMPLET
+// Service de batterie du TamadachAI — MVP COMPLET
 //
-// Le TamagochAI vit dans un smartphone. La batterie est SON corps.
+// Le TamadachAI vit dans un smartphone. La batterie est SON corps.
 // Quand la batterie est faible, il a peur. Quand elle charge, il est soulagé.
 //
 // Ce service :
@@ -27,7 +27,7 @@ let subscription: Battery.Subscription | null = null;
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
 let chargingSubscription: Battery.Subscription | null = null;
 let lastReactionLevel: string | null = null;
-let tamagochaiId: string | null = null;
+let tamadachiId: string | null = null;
 
 // ============================================================
 // INITIALISATION
@@ -41,7 +41,7 @@ export async function initBattery(id: string): Promise<{
   level: number;
   isCharging: boolean;
 }> {
-  tamagochaiId = id;
+  tamadachiId = id;
 
   try {
     // Lecture initiale
@@ -263,10 +263,10 @@ function handleLevelChange(oldLevel: number, newLevel: number): void {
  * Déclenche les effets hormonaux de la batterie
  */
 async function triggerBatteryHormones(): Promise<void> {
-  if (!tamagochaiId) return;
+  if (!tamadachiId) return;
 
   try {
-    await applyBatteryEffect(tamagochaiId, currentLevel, currentIsCharging);
+    await applyBatteryEffect(tamadachiId, currentLevel, currentIsCharging);
   } catch (error) {
     log.error('Failed to trigger battery hormones:', error);
   }

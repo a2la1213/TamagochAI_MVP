@@ -10,7 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTamagochaiData, useEvolution, useEmotion } from '../hooks';
+import { useTamadachiData, useEvolution, useEmotion } from '../hooks';
 import { THEME } from '../constants/config';
 import { EVOLUTION_STAGES } from '../constants/evolution';
 import { getAllDreams, getRecentDreams } from '../services/core/DreamService';
@@ -55,7 +55,7 @@ interface StatsScreenProps {
 }
 
 export function StatsScreen({ onClose }: StatsScreenProps) {
-  const { tamagochai, genome, stats, emotion } = useTamagochaiData();
+  const { tamadachi, genome, stats, emotion } = useTamadachiData();
   const { stage, totalXP } = useEvolution();
   const { emoji, primary, intensity } = useEmotion();
 

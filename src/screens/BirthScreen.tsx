@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/config';
-import { useTamagochaiStore } from '../stores/useTamagochaiStore';
+import { useTamadachiStore } from '../stores/useTamadachiStore';
 import { GenomeReveal } from '../components/modals/GenomeReveal';
 import { SettingsScreen } from './SettingsScreen';
 import { Genome } from '../types';
@@ -33,7 +33,7 @@ export function BirthScreen() {
   const particleAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
-  const createTamagochai = useTamagochaiStore(s => s.createTamagochai);
+  const createTamadachi = useTamadachiStore(s => s.createTamadachi);
   const hasProvider = getAvailableProviders().length > 0;
 
   // Pulse animation pendant la création
@@ -63,7 +63,7 @@ export function BirthScreen() {
     Vibration.vibrate([0, 50, 100, 50, 100, 100]);
 
     try {
-      await createTamagochai(name.trim());
+      await createTamadachi(name.trim());
 
       // Phase: Born — explosion de lumière
       setPhase('born');
@@ -74,9 +74,9 @@ export function BirthScreen() {
         Animated.delay(500),
       ]).start(() => {
         // Récupérer le genome
-        const state = useTamagochaiStore.getState();
-        if (state.tamagochai?.genome) {
-          setGenome(state.tamagochai.genome);
+        const state = useTamadachiStore.getState();
+        if (state.tamadachi?.genome) {
+          setGenome(state.tamadachi.genome);
           setPhase('genome');
         } else {
           setPhase('done');

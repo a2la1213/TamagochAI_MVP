@@ -46,7 +46,7 @@ export function LoadingScreen({ message = 'Chargement...' }: LoadingScreenProps)
       <Animated.Text style={[styles.message, { opacity: pulseAnim }]}>
         {message}
       </Animated.Text>
-      <Text style={styles.brand}>TamagochAI</Text>
+      <Text style={styles.brand}>TamadachAI</Text>
     </View>
   );
 }

@@ -1,1 +1,1 @@
-export { TamagochaiAvatar } from './TamagochaiAvatar';
+export { TamadachiAvatar } from './TamadachiAvatar';
