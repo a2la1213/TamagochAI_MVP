@@ -50,11 +50,11 @@
       "expo-font"
     ],
     "jsEngine": "jsc",
+    "owner": "a2la",
     "extra": {
       "eas": {
-        "projectId": "3292d392-5b39-4b6e-82c6-21922129cd23"
+        "projectId": "1a2d2298-9d9f-4c2f-bf15-f61190a02e33"
       }
-    },
-    "owner": "a2la"
+    }
   }
 }
