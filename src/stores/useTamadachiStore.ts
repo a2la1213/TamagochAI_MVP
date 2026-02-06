@@ -2,6 +2,7 @@
 // Store Zustand principal du TamadachAI — MVP COMPLET v2
 // Intègre la métacognition (subconscient, rêves, notifications)
 
+import { Alert } from 'react-native';
 import { create } from 'zustand';
 import {
   Tamadachi,
@@ -300,6 +301,8 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       } else {
         fullResponse = response.content; // fallback message
         log.error(`LLM failed: ${response.error}`);
+        // DEBUG: Afficher l'erreur à l'écran
+        Alert.alert('LLM Error', `Provider: ${response.provider}\nModel: ${response.model}\nError: ${response.error}\nContent: ${response.content?.substring(0, 100)}`);
       }
       set({ streamingText: fullResponse });
 
