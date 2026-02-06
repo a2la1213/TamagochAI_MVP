@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
+  Image,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -89,7 +90,14 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Progression</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Image
+            source={require('../../assets/avatars/avatar_default.png')}
+            style={{ width: 32, height: 32, borderRadius: 16 }}
+            resizeMode="contain"
+          />
+          <Text style={styles.headerTitle}>Progression</Text>
+        </View>
         <TouchableOpacity onPress={onClose}>
           <Text style={styles.closeButton}>✕</Text>
         </TouchableOpacity>

@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableOpacity,
   Text,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChat, useTamadachiData, useEmotion, useBattery, useEvolution } from '../hooks';
@@ -23,7 +24,6 @@ import { EvolutionModal } from '../components/modals/EvolutionModal';
 import { SettingsScreen } from './SettingsScreen';
 import { StatsScreen } from './StatsScreen';
 import { BatteryIndicator } from '../components/common/BatteryIndicator';
-import { TamadachiAvatar } from '../components/avatar';
 import { THEME } from '../constants/config';
 import { Message, Dream, EvolutionStage } from '../types';
 import { getUnsharedDream, markDreamAsShared } from '../services/core/DreamService';
@@ -113,7 +113,11 @@ export function ChatScreen() {
           <Text style={styles.headerIcon}>📊</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <TamadachiAvatar size={36} showLabel={false} />
+          <Image
+            source={require('../../assets/avatars/avatar_default.png')}
+            style={{ width: 36, height: 36, borderRadius: 18 }}
+            resizeMode="contain"
+          />
           <Text style={styles.headerTitle}>{name}</Text>
           <BatteryIndicator percent={batteryPercent} isCharging={isCharging || false} />
         </View>
