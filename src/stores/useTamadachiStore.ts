@@ -73,7 +73,6 @@ import {
 import {
   initLLM,
   chat,
-  chatStream,
   setApiKey as llmSetApiKey,
   setPreferredProvider as llmSetPreferredProvider,
   getPreferredProvider,
@@ -284,34 +283,25 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       const temperature = getIdealTemperature(tamadachi.genome, tamadachi.stage);
       const maxTokens = getIdealMaxTokens(tamadachi.genome, tamadachi.stage);
 
-      // 6. Appel LLM avec streaming
+      // 6. Appel LLM (direct, pas de streaming — React Native ne supporte pas ReadableStream)
       let fullResponse = '';
-      const stream = chatStream(
+      set({ streamingText: '...' });
+
+      const response = await chat(
         enrichedPrompt,
         chatHistory.slice(0, -1),
         content,
         { temperature, maxTokens },
       );
 
-      for await (const chunk of stream) {
-        if (typeof chunk === 'string') {
-          fullResponse += chunk;
-          set({ streamingText: fullResponse });
-        }
-      }
-
-      // 7. Fallback si pas de streaming
-      if (!fullResponse) {
-        log.warn('Streaming returned empty, trying non-streaming...');
-        const response = await chat(
-          enrichedPrompt,
-          chatHistory.slice(0, -1),
-          content,
-          { temperature, maxTokens },
-        );
+      if (response.success) {
         fullResponse = response.content;
-        set({ streamingText: fullResponse });
+        log.info(`LLM response from ${response.provider}/${response.model} — ${response.tokensUsed} tokens, ${response.latencyMs}ms`);
+      } else {
+        fullResponse = response.content; // fallback message
+        log.error(`LLM failed: ${response.error}`);
       }
+      set({ streamingText: fullResponse });
 
       // 8. Stocker la réponse
       if (fullResponse) {

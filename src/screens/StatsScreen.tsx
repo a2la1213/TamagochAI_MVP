@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   stageEmoji: { fontSize: 48, marginBottom: 8 },
   stageName: { fontSize: 22, fontWeight: '700', color: THEME.colors.text, marginBottom: 4 },
-  stageDescription: { fontSize: 14, color: THEME.colors.textSecondary, textAlign: 'center', marginBottom: 16 },
+  stageDescription: { fontSize: 13, color: THEME.colors.textSecondary, textAlign: 'center', marginBottom: 16, paddingHorizontal: 8 },
   xpContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   xpText: { fontSize: 18, fontWeight: '700', color: THEME.colors.primary },
   xpNext: { fontSize: 14, color: THEME.colors.textSecondary },
@@ -272,15 +272,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', width: '100%',
     marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: THEME.colors.border,
   },
-  timelineItem: { alignItems: 'center', flex: 1 },
+  timelineItem: { alignItems: 'center', flex: 1, maxWidth: 70 },
   timelineDot: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: THEME.colors.border,
     justifyContent: 'center', alignItems: 'center', marginBottom: 4,
   },
   timelineDotActive: { backgroundColor: THEME.colors.primary + '30' },
   timelineDotCurrent: { backgroundColor: THEME.colors.primary, borderWidth: 2, borderColor: THEME.colors.primary },
-  timelineDotEmoji: { fontSize: 14 },
-  timelineLabel: { fontSize: 9, color: THEME.colors.textSecondary, textAlign: 'center' },
+  timelineDotEmoji: { fontSize: 16 },
+  timelineLabel: { fontSize: 8, color: THEME.colors.textSecondary, textAlign: 'center', width: 60 },
   timelineLabelActive: { color: THEME.colors.text, fontWeight: '600' },
 
   // Cards

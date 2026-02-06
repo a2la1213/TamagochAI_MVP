@@ -17,6 +17,13 @@ import {
 import { LLM_CONFIG } from '../../../constants/config';
 import { createLogger } from '../../../utils/helpers';
 
+// Timeout compatible JSC (pas de AbortSignal.timeout en React Native)
+function createTimeout(ms: number): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
+}
+
 const log = createLogger('Claude');
 
 const CLAUDE_API_BASE = 'https://api.anthropic.com/v1/messages';
@@ -81,7 +88,7 @@ export class ClaudeProvider implements LLMProviderInstance {
           'content-type': 'application/json',
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(LLM_CONFIG.timeout),
+        signal: createTimeout(LLM_CONFIG.timeout).signal,
       });
 
       if (!response.ok) {
@@ -126,7 +133,7 @@ export class ClaudeProvider implements LLMProviderInstance {
           'content-type': 'application/json',
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(LLM_CONFIG.timeout),
+        signal: createTimeout(LLM_CONFIG.timeout).signal,
       });
 
       if (!response.ok) {

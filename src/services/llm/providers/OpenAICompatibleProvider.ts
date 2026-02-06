@@ -19,6 +19,13 @@ import {
 import { LLM_CONFIG } from '../../../constants/config';
 import { createLogger } from '../../../utils/helpers';
 
+// Timeout compatible JSC (pas de AbortSignal.timeout en React Native)
+function createTimeout(ms: number): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
+}
+
 export interface OpenAICompatibleConfig {
   name: LLMProviderName;
   apiBase: string;
@@ -80,7 +87,7 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(LLM_CONFIG.timeout),
+        signal: createTimeout(LLM_CONFIG.timeout).signal,
       });
 
       if (!response.ok) {
@@ -121,7 +128,7 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(LLM_CONFIG.timeout),
+        signal: createTimeout(LLM_CONFIG.timeout).signal,
       });
 
       if (!response.ok) {

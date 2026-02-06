@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "TamadachAI",
-    "slug": "tamadachi",
+    "slug": "tamagochai",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,7 +29,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0F172A"
       },
-      "package": "com.tamadachi.app",
+      "package": "com.a2la1213.tamagochai",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",

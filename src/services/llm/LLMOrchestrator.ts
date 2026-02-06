@@ -146,7 +146,7 @@ export async function chat(
     }
 
     try {
-      log.info(`Trying provider: ${providerName}`);
+      log.info(`Trying provider: ${providerName} (key: ${provider.getApiKey()?.substring(0, 8)}...)`);
       const response = await attemptWithRetry(provider, request);
 
       if (response.success) {

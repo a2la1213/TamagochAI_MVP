@@ -20,6 +20,13 @@ import {
 import { LLM_CONFIG } from '../../../constants/config';
 import { createLogger, now } from '../../../utils/helpers';
 
+// Timeout compatible JSC (pas de AbortSignal.timeout en React Native)
+function createTimeout(ms: number): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
+}
+
 const log = createLogger('Gemini');
 
 // ============================================================
@@ -89,7 +96,7 @@ export class GeminiProvider implements LLMProviderInstance {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(LLM_CONFIG.timeout),
+          signal: createTimeout(LLM_CONFIG.timeout).signal,
         },
       );
 
@@ -142,7 +149,7 @@ export class GeminiProvider implements LLMProviderInstance {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(LLM_CONFIG.timeout),
+          signal: createTimeout(LLM_CONFIG.timeout).signal,
         },
       );
 
