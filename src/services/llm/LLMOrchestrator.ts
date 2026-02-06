@@ -137,11 +137,12 @@ export async function chat(
   };
 
   const providerOrder = buildProviderOrder(options?.provider, options?.skipFallback);
+  const errors: string[] = [];
 
   for (const providerName of providerOrder) {
     const provider = providers.get(providerName);
     if (!provider || !provider.getApiKey()) {
-      log.warn(`Skipping ${providerName} — no API key`);
+      errors.push(`${providerName}: no API key`);
       continue;
     }
 
@@ -156,60 +157,10 @@ export async function chat(
 
       log.warn(`Provider ${providerName} failed: ${response.error}`);
     } catch (error: any) {
-      log.error(`Provider ${providerName} threw: ${error.message}`);
-    }
-  }
-
-  // Tous les providers ont échoué
-  stats.totalRequests++;
-  stats.totalErrors++;
-  updateSuccessRate();
-
-  return {
-    success: false,
-    content: generateFallbackMessage(),
-    provider: preferredProvider,
-    model: 'fallback',
-    tokensUsed: 0,
-    latencyMs: 0,
-    error: 'All providers failed',
-    finishReason: 'error',
-  };
-}
-
-/**
- * Streaming — retourne un AsyncGenerator de chunks
- */
-export async function* chatStream(
-  systemPrompt: string,
-  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  userMessage: string,
-  options?: {
-    temperature?: number;
-    maxTokens?: number;
-  },
-): AsyncGenerator<string, LLMResponse, unknown> {
-  ensureInitialized();
-
-  const messages: LLMMessage[] = chatHistory.map(m => ({
-    role: m.role as 'user' | 'assistant' | 'system',
-    content: m.content,
-  }));
-
-  const request: LLMRequest = {
-    systemPrompt,
-    messages,
-    userMessage,
-    temperature: options?.temperature ?? LLM_CONFIG.defaultParams.temperature,
-    maxTokens: options?.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens,
-    topP: LLM_CONFIG.defaultParams.topP,
-  };
-
-  const providerOrder = buildProviderOrder();
-
-  for (const providerName of providerOrder) {
-    const provider = providers.get(providerName);
-    if (!provider || !provider.isAvailable()) continue;
+      const errMsg = error instanceof Error ? error.message : String(error);
+      errors.push(`${providerName}: ${errMsg}`);
+      log.error(`Provider ${providerName} failed: ${errMsg}`);
+      continue;
 
     // Vérifier si le provider supporte le streaming
     if (!provider.generateStream) {

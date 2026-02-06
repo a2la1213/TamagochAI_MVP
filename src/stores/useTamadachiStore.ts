@@ -302,7 +302,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         fullResponse = response.content; // fallback message
         log.error(`LLM failed: ${response.error}`);
         // DEBUG: Afficher l'erreur à l'écran
-        Alert.alert('LLM Error', `Provider: ${response.provider}\nModel: ${response.model}\nError: ${response.error}\nContent: ${response.content?.substring(0, 100)}`);
+        Alert.alert('LLM Error', `${response.error}`);
       }
       set({ streamingText: fullResponse });
 
