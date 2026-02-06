@@ -23,6 +23,7 @@ import { EvolutionModal } from '../components/modals/EvolutionModal';
 import { SettingsScreen } from './SettingsScreen';
 import { StatsScreen } from './StatsScreen';
 import { BatteryIndicator } from '../components/common/BatteryIndicator';
+import { TamadachiAvatar } from '../components/avatar';
 import { THEME } from '../constants/config';
 import { Message, Dream, EvolutionStage } from '../types';
 import { getUnsharedDream, markDreamAsShared } from '../services/core/DreamService';
@@ -112,7 +113,7 @@ export function ChatScreen() {
           <Text style={styles.headerIcon}>📊</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerEmoji}>{emotionEmoji}</Text>
+          <TamadachiAvatar size={36} showLabel={false} />
           <Text style={styles.headerTitle}>{name}</Text>
           <BatteryIndicator percent={batteryPercent} isCharging={isCharging || false} />
         </View>
