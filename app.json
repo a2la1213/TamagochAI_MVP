@@ -45,13 +45,16 @@
           "icon": "./assets/icon.png",
           "color": "#3B82F6"
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-font"
     ],
+    "jsEngine": "jsc",
     "extra": {
       "eas": {
-        "projectId": "tamagochai-mvp"
+        "projectId": "3292d392-5b39-4b6e-82c6-21922129cd23"
       }
     },
-    "jsEngine": "jsc"
+    "owner": "a2la1213"
   }
 }

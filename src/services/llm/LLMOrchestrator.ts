@@ -30,7 +30,7 @@ const log = createLogger('LLM');
 // ============================================================
 
 const PROVIDER_MODELS: Record<LLMProviderName, string> = {
-  gemini: 'gemini-2.5-flash',
+  gemini: 'gemini-2.0-flash',
   claude: 'claude-sonnet-4-5-20250929',
   openai: 'gpt-4o-mini',
   deepseek: 'deepseek-chat',
@@ -320,14 +320,7 @@ export async function setApiKey(provider: LLMProviderName, key: string): Promise
 
   instance.setApiKey(key);
 
-  // Valider la clé si le provider le supporte
-  if (instance.validateApiKey) {
-    const valid = await instance.validateApiKey(key);
-    if (!valid) {
-      instance.setApiKey(''); // Reset
-      return false;
-    }
-  }
+  // On sauvegarde directement — la validation se fera au premier appel
 
   await setSetting(`api_key_${provider}`, key);
   updateFallbackOrder();

@@ -65,7 +65,7 @@ export const LLM_CONFIG = {
     gemini: {
       name: 'Gemini',
       icon: '⚡',
-      models: ['gemini-2.5-flash', 'gemini-2.0-flash'],
+      models: ['gemini-2.0-flash', 'gemini-2.0-flash'],
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
       isPaid: false,
       maxTokens: 8192,
