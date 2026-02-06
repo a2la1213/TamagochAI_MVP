@@ -219,7 +219,6 @@ export class ClaudeProvider implements LLMProviderInstance {
       model: this.model,
       max_tokens: request.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens,
       temperature: request.temperature ?? LLM_CONFIG.defaultParams.temperature,
-      top_p: request.topP ?? LLM_CONFIG.defaultParams.topP,
       messages,
     };
 

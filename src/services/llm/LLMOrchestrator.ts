@@ -30,7 +30,7 @@ const log = createLogger('LLM');
 // ============================================================
 
 const PROVIDER_MODELS: Record<LLMProviderName, string> = {
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-2.0-flash-lite',
   claude: 'claude-sonnet-4-5-20250929',
   openai: 'gpt-4o-mini',
   deepseek: 'deepseek-chat',

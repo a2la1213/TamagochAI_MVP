@@ -34,7 +34,7 @@ const log = createLogger('Gemini');
 // ============================================================
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-2.0-flash-lite';
 
 // ============================================================
 // PROVIDER
@@ -246,7 +246,6 @@ export class GeminiProvider implements LLMProviderInstance {
       generationConfig: {
         temperature: request.temperature ?? LLM_CONFIG.defaultParams.temperature,
         maxOutputTokens: request.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens,
-        topP: request.topP ?? LLM_CONFIG.defaultParams.topP,
         topK: LLM_CONFIG.defaultParams.topK,
       },
     };
