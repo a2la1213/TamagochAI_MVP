@@ -7,6 +7,25 @@ import { useEmotion, useBattery, useEvolution } from '../../hooks';
 import { THEME } from '../../constants/config';
 import { EVOLUTION_STAGES } from '../../constants/evolution';
 
+const EMOTION_FR: Record<string, string> = {
+  neutral: 'Neutre',
+  joy: 'Joie',
+  sadness: 'Triste',
+  anger: 'Colère',
+  fear: 'Peur',
+  surprise: 'Surprise',
+  disgust: 'Dégoût',
+  love: 'Amour',
+  curiosity: 'Curiosité',
+  confusion: 'Confusion',
+  excitement: 'Excité',
+  pride: 'Fierté',
+  shame: 'Honte',
+  anxiety: 'Anxiété',
+  calm: 'Calme',
+  melancholy: 'Mélancolie',
+};
+
 export function StatusBar() {
   const { emoji, primary } = useEmotion();
   const { percent, isCharging } = useBattery();
@@ -19,7 +38,7 @@ export function StatusBar() {
       {/* Émotion */}
       <View style={styles.item}>
         <Text style={styles.emoji}>{emoji}</Text>
-        <Text style={styles.label}>{primary}</Text>
+        <Text style={styles.label} numberOfLines={1}>{EMOTION_FR[primary] || primary}</Text>
       </View>
 
       {/* Stade + XP */}
@@ -69,6 +88,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     color: THEME.colors.textSecondary,
+    maxWidth: 70,
   },
   xpText: {
     fontSize: 14,

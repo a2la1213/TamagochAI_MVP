@@ -24,6 +24,12 @@ import { Dream, InternalThought } from '../types';
 // PROGRESS BAR COMPONENT
 // ============================================================
 
+const EMOTION_FR: Record<string, string> = {
+  neutral: 'Neutre', joy: 'Joie', sadness: 'Triste', anger: 'Colère',
+  fear: 'Peur', surprise: 'Surprise', love: 'Amour', curiosity: 'Curiosité',
+  excitement: 'Excité', pride: 'Fierté', calm: 'Calme', anxiety: 'Anxiété',
+};
+
 function ProgressBar({ percent, color }: { percent: number; color: string }) {
   return (
     <View style={styles.progressBarBg}>
@@ -169,8 +175,8 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
             <View style={styles.emotionRow}>
               <Text style={styles.emotionEmoji}>{emoji}</Text>
               <View>
-                <Text style={styles.emotionPrimary}>{primary}</Text>
-                <Text style={styles.emotionIntensity}>Intensité : {intensity}%</Text>
+                <Text style={styles.emotionPrimary}>{EMOTION_FR[primary] || primary}</Text>
+                <Text style={styles.emotionIntensity}>Intensité : {intensity ?? 0}%</Text>
               </View>
             </View>
           </View>
@@ -255,7 +261,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
 
 
 function HormoneBar({ label, value, color, emoji }: { label: string; value: number; color: string; emoji: string }) {
-  const percent = Math.round(value * 100);
+  const percent = Math.round(value);
   return (
     <View style={styles.hormoneRow}>
       <Text style={styles.hormoneEmoji}>{emoji}</Text>
