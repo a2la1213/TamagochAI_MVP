@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     color: THEME.colors.textSecondary,
-    maxWidth: 70,
+    flexShrink: 1,
   },
   xpText: {
     fontSize: 14,

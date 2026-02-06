@@ -176,7 +176,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
               <Text style={styles.emotionEmoji}>{emoji}</Text>
               <View>
                 <Text style={styles.emotionPrimary}>{EMOTION_FR[primary] || primary}</Text>
-                <Text style={styles.emotionIntensity}>Intensité : {intensity ?? 0}%</Text>
+                <Text style={styles.emotionIntensity}>Intensité : {typeof intensity === 'number' ? (intensity < 1 ? Math.round(intensity * 100) : Math.round(intensity)) : 0}%</Text>
               </View>
             </View>
           </View>
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
 
   // Stats
   statRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  statLabel: { fontSize: 14, color: THEME.colors.textSecondary, flexShrink: 0, marginRight: 12 },
+  statLabel: { fontSize: 14, color: THEME.colors.textSecondary, flexShrink: 0, marginRight: 12, minWidth: 140 },
   statValue: { fontSize: 14, fontWeight: '600', color: THEME.colors.text, flexShrink: 1, textAlign: 'right' },
 
   // Dreams

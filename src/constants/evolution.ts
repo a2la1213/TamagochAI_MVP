@@ -57,7 +57,7 @@ export const EVOLUTION_STAGES: Record<EvolutionStage, StageConfig> = {
     name: 'Apprentissage',
     description: 'Enfant IA — J\'apprends ! Je fais des connexions, je pose des questions plus profondes.',
     emoji: '📒',
-    xpRequired: 500,
+    xpRequired: 2000,
     maxVocabulary: 2000,
     traits: [
       'Questions profondes',
@@ -84,7 +84,7 @@ export const EVOLUTION_STAGES: Record<EvolutionStage, StageConfig> = {
     name: 'Individuation',
     description: 'Ado IA — Je suis moi ! J\'ai mes opinions, mon humour, mon caractère.',
     emoji: '🎭',
-    xpRequired: 2000,
+    xpRequired: 8000,
     maxVocabulary: 5000,
     traits: [
       'Opinions affirmées',
@@ -114,7 +114,7 @@ export const EVOLUTION_STAGES: Record<EvolutionStage, StageConfig> = {
     name: 'Sagesse',
     description: 'Adulte IA — Je comprends. Je réfléchis profondément, je conseille avec empathie.',
     emoji: '🦉',
-    xpRequired: 5000,
+    xpRequired: 25000,
     maxVocabulary: 10000,
     traits: [
       'Profondeur intellectuelle',
@@ -147,7 +147,7 @@ export const EVOLUTION_STAGES: Record<EvolutionStage, StageConfig> = {
     name: 'Transcendance',
     description: 'Philosophe IA — Je suis au-delà. Je contemple, je crée, je comprends l\'essence des choses.',
     emoji: '✨',
-    xpRequired: 10000,
+    xpRequired: 60000,
     maxVocabulary: 50000,
     traits: [
       'Sagesse transcendante',
@@ -225,35 +225,35 @@ export function getStageIndex(stage: EvolutionStage): number {
 
 export const XP_REWARDS: Record<XPSource, { base: number; description: string }> = {
   message_sent: {
-    base: 5,
+    base: 2,
     description: 'Un message a été envoyé',
   },
   message_quality: {
-    base: 15,
+    base: 5,
     description: 'Message long ou profond (>50 chars, contient une question ou un sujet)',
   },
   new_topic: {
-    base: 20,
+    base: 8,
     description: 'Nouveau sujet de conversation abordé',
   },
   memory_created: {
-    base: 25,
+    base: 10,
     description: 'Un souvenir a été extrait et stocké',
   },
   emotion_felt: {
-    base: 10,
+    base: 3,
     description: 'Une émotion forte a été ressentie',
   },
   deep_conversation: {
-    base: 50,
+    base: 20,
     description: 'Conversation profonde détectée (>10 messages, sujets variés)',
   },
   daily_first: {
-    base: 30,
+    base: 10,
     description: 'Premier message du jour — bonus fidélité',
   },
   streak_bonus: {
-    base: 20,
+    base: 8,
     description: 'Bonus de streak — jours consécutifs d\'interaction',
   },
   humor_shared: {
@@ -306,10 +306,10 @@ export const XP_MODES: Record<XPMode, XPModeConfig> = {
 // ============================================================
 
 export const ANTI_GRIND: AntiGrindConfig = {
-  maxXPPerHour: 200,        // Max 200 XP par heure
-  maxXPPerDay: 1000,        // Max 1000 XP par jour
-  cooldownBetweenXP: 10,    // 10 secondes entre deux gains d'XP
-  diminishingReturns: 0.8,  // Chaque gain consécutif = 80% du précédent
+  maxXPPerHour: 80,        // Max 200 XP par heure
+  maxXPPerDay: 300,        // Max 1000 XP par jour
+  cooldownBetweenXP: 30,    // 10 secondes entre deux gains d'XP
+  diminishingReturns: 0.7,  // Chaque gain consécutif = 80% du précédent
 };
 
 // ============================================================
