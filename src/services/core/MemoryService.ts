@@ -1,0 +1,615 @@
+// src/services/core/MemoryService.ts
+// Service de mémoire du TamagochAI — MVP COMPLET
+//
+// Ce service gère la mémoire à long terme :
+// - Extraction automatique de souvenirs depuis les messages
+// - Recherche par pertinence (FTS5) et par type
+// - Injection des souvenirs dans le contexte LLM
+// - Consolidation et decay de l'importance
+// - Détection anti-doublons
+//
+// CORRECTION V2 : Le MemoryService est maintenant CONNECTÉ
+// au flux de conversation. Chaque message est analysé pour
+// extraire des souvenirs. Les souvenirs sont injectés dans
+// le prompt système du LLM.
+
+import {
+  Memory,
+  MemoryType,
+  MemoryQuery,
+  CreateMemoryData,
+  ExtractedMemory,
+  HormoneLevels,
+} from '../../types';
+import { MEMORY_CONFIG } from '../../constants/config';
+import { isEmotionalPeak } from '../../constants/hormones';
+import {
+  createMemory,
+  queryMemories,
+  updateMemory,
+  countMemories,
+  memoryExists,
+  incrementTamagochaiStat,
+} from '../database/DatabaseService';
+import {
+  createLogger,
+  now,
+  wordCount,
+  extractKeywords,
+  cleanText,
+  truncate,
+} from '../../utils/helpers';
+
+const log = createLogger('Memory');
+
+// ============================================================
+// EXTRACTION DE SOUVENIRS DEPUIS UN MESSAGE
+// ============================================================
+
+/**
+ * Analyse un message (user ou assistant) et extrait les souvenirs potentiels.
+ * C'est la fonction clé : elle détermine CE QUI MÉRITE d'être retenu.
+ */
+export function extractMemoriesFromMessage(
+  message: string,
+  role: 'user' | 'assistant',
+  hormones?: HormoneLevels,
+): ExtractedMemory[] {
+  const memories: ExtractedMemory[] = [];
+  const lower = message.toLowerCase();
+  const clean = cleanText(message);
+
+  // Ne pas extraire des messages trop courts
+  if (clean.length < MEMORY_CONFIG.extraction.minMessageLength) {
+    return [];
+  }
+
+  // ---- FAITS (informations factuelles sur l'humain) ----
+  if (role === 'user') {
+    // Nom
+    const nameMatch = lower.match(/(?:je m'appelle|mon nom c'est|je suis|moi c'est|appelle[- ]moi)\s+([a-zàâäéèêëïîôùûüÿæœç]+)/i);
+    if (nameMatch) {
+      memories.push({
+        content: `L'humain s'appelle ${nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1)}`,
+        type: 'fact',
+        importance: 9,
+        emotionalWeight: 30,
+      });
+    }
+
+    // Âge
+    const ageMatch = lower.match(/(?:j'ai|j ai)\s+(\d{1,3})\s+ans/);
+    if (ageMatch) {
+      memories.push({
+        content: `L'humain a ${ageMatch[1]} ans`,
+        type: 'fact',
+        importance: 8,
+        emotionalWeight: 10,
+      });
+    }
+
+    // Lieu de vie
+    const locationMatch = lower.match(/(?:j'habite|je vis|je suis de|je viens de)\s+(?:à|a|en|au|aux)?\s*([a-zàâäéèêëïîôùûüÿæœç\s-]+)/i);
+    if (locationMatch) {
+      memories.push({
+        content: `L'humain habite à ${locationMatch[1].trim()}`,
+        type: 'fact',
+        importance: 7,
+        emotionalWeight: 10,
+      });
+    }
+
+    // Métier / études
+    const jobMatch = lower.match(/(?:je travaille|je suis|je fais|j'étudie|j étudi)\s+(?:comme|en tant que|dans|à)?\s*([a-zàâäéèêëïîôùûüÿæœç\s'-]+)/i);
+    if (jobMatch && !jobMatch[1].match(/^(bien|mal|content|triste|là|ici|ok|pas)/)) {
+      memories.push({
+        content: `L'humain travaille/étudie : ${jobMatch[1].trim()}`,
+        type: 'fact',
+        importance: 7,
+        emotionalWeight: 10,
+      });
+    }
+  }
+
+  // ---- RELATIONS (famille, amis) ----
+  if (role === 'user') {
+    const relationPatterns = [
+      { pattern: /(?:mon|ma)\s+(père|papa|mère|maman|frère|sœur|soeur|fils|fille|femme|mari|copain|copine|meilleur ami|meilleure amie)/i, type: 'relationship' as MemoryType },
+      { pattern: /(?:j'ai|j ai)\s+(?:un|une)\s+(frère|sœur|soeur|fils|fille|chat|chien|enfant)/i, type: 'relationship' as MemoryType },
+    ];
+
+    for (const { pattern, type } of relationPatterns) {
+      const match = lower.match(pattern);
+      if (match) {
+        // Extraire le contexte autour du match
+        const context = extractContext(clean, match[0], 100);
+        memories.push({
+          content: `L'humain a mentionné : ${context}`,
+          type,
+          importance: 8,
+          emotionalWeight: 25,
+        });
+      }
+    }
+  }
+
+  // ---- PRÉFÉRENCES ----
+  if (role === 'user') {
+    const prefPatterns = [
+      /(?:j'aime|j aime|j'adore|j adore|je kiffe)\s+(?:bien|beaucoup|trop)?\s*([a-zàâäéèêëïîôùûüÿæœç\s'-]+)/i,
+      /(?:je déteste|je supporte pas|j'ai horreur de)\s+([a-zàâäéèêëïîôùûüÿæœç\s'-]+)/i,
+      /(?:mon|ma)\s+(?:truc|passion|hobby|sport|jeu)\s+(?:préféré|favori)?\s*(?:c'est|c est)?\s*([a-zàâäéèêëïîôùûüÿæœç\s'-]+)/i,
+    ];
+
+    for (const pattern of prefPatterns) {
+      const match = lower.match(pattern);
+      if (match && match[1].trim().length > 2) {
+        const pref = match[1].trim();
+        // Filtrer les faux positifs
+        if (!pref.match(/^(pas|bien|ça|que|quand|toi|lui|elle|nous|vous)/)) {
+          memories.push({
+            content: `Préférence de l'humain : ${match[0].trim()}`,
+            type: 'preference',
+            importance: MEMORY_CONFIG.importanceByType.preference,
+            emotionalWeight: 15,
+          });
+        }
+      }
+    }
+  }
+
+  // ---- ÉMOTIONS FORTES ----
+  if (role === 'user') {
+    const emotionPatterns = [
+      { pattern: /(?:je suis triste|ça va pas|j'ai le cafard|je déprime|je suis déprimé)/i, emotion: 'tristesse' },
+      { pattern: /(?:je suis content|je suis heureux|trop bien|super content|je suis trop happy)/i, emotion: 'joie' },
+      { pattern: /(?:j'ai peur|je suis inquiet|ça me fait peur|j'angoisse|je stress)/i, emotion: 'peur' },
+      { pattern: /(?:je t'aime|tu me manques|tu comptes pour moi|t'es important)/i, emotion: 'amour' },
+      { pattern: /(?:je suis en colère|ça m'énerve|je suis furieux|c'est injuste)/i, emotion: 'colère' },
+    ];
+
+    for (const { pattern, emotion } of emotionPatterns) {
+      if (pattern.test(lower)) {
+        memories.push({
+          content: `L'humain a exprimé de la ${emotion} : "${truncate(clean, 100)}"`,
+          type: 'emotion',
+          importance: MEMORY_CONFIG.importanceByType.emotion,
+          emotionalWeight: 50,
+        });
+        break; // Une seule émotion par message
+      }
+    }
+  }
+
+  // ---- SUJETS ABORDÉS ----
+  const keywords = extractKeywords(clean);
+  if (keywords.length >= 2 && wordCount(clean) >= 10) {
+    memories.push({
+      content: `Sujet discuté : ${keywords.slice(0, 5).join(', ')}`,
+      type: 'topic',
+      importance: MEMORY_CONFIG.importanceByType.topic,
+      emotionalWeight: 5,
+    });
+  }
+
+  // ---- FLASH MEMORIES (émotionnel peak) ----
+  if (hormones && isEmotionalPeak(hormones)) {
+    // Si le TamagochAI est en pic émotionnel, transformer le souvenir le plus important en flash
+    const bestMemory = memories.sort((a, b) => b.importance - a.importance)[0];
+    if (bestMemory) {
+      bestMemory.importance = 10;
+      bestMemory.emotionalWeight = 80;
+      bestMemory.type = 'flash';
+      log.info('⚡ Flash memory created (emotional peak)');
+    }
+  }
+
+  // Limiter le nombre de souvenirs extraits par message
+  const filtered = memories
+    .filter(m => m.importance >= MEMORY_CONFIG.extraction.minImportance)
+    .sort((a, b) => b.importance - a.importance)
+    .slice(0, MEMORY_CONFIG.extraction.maxMemoriesPerMessage);
+
+  if (filtered.length > 0) {
+    log.info(`Extracted ${filtered.length} memories from message`);
+  }
+
+  return filtered;
+}
+
+// ============================================================
+// STOCKAGE
+// ============================================================
+
+/**
+ * Stocke un souvenir extrait (avec vérification anti-doublon)
+ */
+export async function storeMemory(
+  tamagochaiId: string,
+  memory: ExtractedMemory,
+  sourceConversationId?: string,
+  sourceMessageId?: string,
+): Promise<string | null> {
+  try {
+    // Anti-doublon
+    const exists = await memoryExists(tamagochaiId, memory.content);
+    if (exists) {
+      log.debug(`Memory already exists, skipping: ${truncate(memory.content, 50)}`);
+      return null;
+    }
+
+    const id = await createMemory(tamagochaiId, memory.type, memory.content, {
+      importance: memory.importance,
+      emotionalWeight: memory.emotionalWeight,
+      isFlash: memory.type === 'flash',
+      sourceConversationId,
+      sourceMessageId,
+    });
+
+    // Mettre à jour le compteur de mémoires du TamagochAI
+    await incrementTamagochaiStat(tamagochaiId, 'total_memories');
+
+    log.info(`Stored [${memory.type}] (importance: ${memory.importance}): ${truncate(memory.content, 60)}`);
+    return id;
+  } catch (error) {
+    log.error('Failed to store memory:', error);
+    return null;
+  }
+}
+
+/**
+ * Extrait et stocke les souvenirs d'un message en une seule opération
+ * C'est la fonction appelée par le ConversationService après chaque message
+ */
+export async function processMessageForMemories(
+  tamagochaiId: string,
+  message: string,
+  role: 'user' | 'assistant',
+  conversationId: string,
+  messageId: string,
+  hormones?: HormoneLevels,
+): Promise<{ memoriesCreated: number; memories: string[] }> {
+  const extracted = extractMemoriesFromMessage(message, role, hormones);
+  const created: string[] = [];
+
+  for (const memory of extracted) {
+    const id = await storeMemory(tamagochaiId, memory, conversationId, messageId);
+    if (id) {
+      created.push(memory.content);
+    }
+  }
+
+  return { memoriesCreated: created.length, memories: created };
+}
+
+// ============================================================
+// RECHERCHE ET RÉCUPÉRATION
+// ============================================================
+
+/**
+ * Recherche des souvenirs pertinents pour un message donné
+ * Utilise la recherche FTS5 + les top memories
+ */
+export async function findRelevantMemories(
+  tamagochaiId: string,
+  message: string,
+  limit: number = 10,
+): Promise<Memory[]> {
+  const keywords = extractKeywords(message);
+  const results: Memory[] = [];
+  const seenIds = new Set<string>();
+
+  // 1. Recherche FTS si on a des mots-clés
+  if (keywords.length > 0) {
+    const searchQuery = keywords.join(' OR ');
+    try {
+      const ftsResults = await searchMemories(tamagochaiId, searchQuery, Math.ceil(limit / 2));
+      for (const mem of ftsResults) {
+        if (!seenIds.has(mem.id)) {
+          results.push(mem);
+          seenIds.add(mem.id);
+        }
+      }
+    } catch (error) {
+      log.debug('FTS search failed, falling back to top memories');
+    }
+  }
+
+  // 2. Compléter avec les top memories (les plus importants)
+  const remaining = limit - results.length;
+  if (remaining > 0) {
+    const topMemories = await getTopMemories(tamagochaiId, remaining + 5);
+    for (const mem of topMemories) {
+      if (!seenIds.has(mem.id) && results.length < limit) {
+        results.push(mem);
+        seenIds.add(mem.id);
+      }
+    }
+  }
+
+  // Mettre à jour les access counts
+  for (const mem of results) {
+    try {
+      await updateMemory(mem.id, {});
+    } catch (e) {
+      // Pas critique
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Récupère les souvenirs par type
+ */
+export async function getMemoriesByType(
+  tamagochaiId: string,
+  type: MemoryType,
+  limit: number = 20,
+): Promise<Memory[]> {
+  return queryMemories(tamagochaiId, {
+    type,
+    orderBy: 'importance',
+    limit,
+  });
+}
+
+/**
+ * Récupère tous les faits connus sur l'humain
+ */
+export async function getUserFacts(tamagochaiId: string): Promise<Memory[]> {
+  const facts = await getMemoriesByType(tamagochaiId, 'fact');
+  const relationships = await getMemoriesByType(tamagochaiId, 'relationship');
+  const preferences = await getMemoriesByType(tamagochaiId, 'preference');
+  return [...facts, ...relationships, ...preferences].sort((a, b) => b.importance - a.importance);
+}
+
+/**
+ * Récupère les flash memories (souvenirs les plus forts)
+ */
+export async function getFlashMemories(tamagochaiId: string): Promise<Memory[]> {
+  return queryMemories(tamagochaiId, {
+    type: 'flash',
+    orderBy: 'importance',
+    limit: 20,
+  });
+}
+
+// ============================================================
+// FORMATAGE POUR LE PROMPT LLM
+// ============================================================
+
+/**
+ * Formate les souvenirs pertinents en texte injectable dans le prompt
+ * C'est cette fonction qui rend la mémoire VIVANTE dans les réponses
+ */
+export function formatMemoriesForPrompt(memories: Memory[]): string {
+  if (memories.length === 0) {
+    return 'Aucun souvenir pertinent pour cette conversation.';
+  }
+
+  const lines: string[] = [];
+
+  // Regrouper par type pour plus de clarté
+  const facts = memories.filter(m => m.type === 'fact' || m.type === 'relationship');
+  const preferences = memories.filter(m => m.type === 'preference');
+  const emotions = memories.filter(m => m.type === 'emotion' || m.type === 'flash');
+  const topics = memories.filter(m => m.type === 'topic' || m.type === 'event');
+
+  if (facts.length > 0) {
+    lines.push('Ce que tu sais sur ton humain :');
+    for (const mem of facts) {
+      const flash = mem.isFlash ? ' ⚡' : '';
+      lines.push(`  - ${mem.content}${flash}`);
+    }
+  }
+
+  if (preferences.length > 0) {
+    lines.push('Ses préférences :');
+    for (const mem of preferences) {
+      lines.push(`  - ${mem.content}`);
+    }
+  }
+
+  if (emotions.length > 0) {
+    lines.push('Moments émotionnels partagés :');
+    for (const mem of emotions) {
+      const flash = mem.isFlash ? ' ⚡' : '';
+      lines.push(`  - ${mem.content}${flash}`);
+    }
+  }
+
+  if (topics.length > 0) {
+    lines.push('Sujets déjà discutés ensemble :');
+    for (const mem of topics) {
+      lines.push(`  - ${mem.content}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Pipeline complet : cherche les souvenirs pertinents et les formate
+ */
+export async function getFormattedRelevantMemories(
+  tamagochaiId: string,
+  message: string,
+  limit: number = 10,
+): Promise<string> {
+  const memories = await findRelevantMemories(tamagochaiId, message, limit);
+  return formatMemoriesForPrompt(memories);
+}
+
+// ============================================================
+// CONSOLIDATION (nettoyage et maintenance)
+// ============================================================
+
+/**
+ * Consolide les souvenirs anciens :
+ * - Réduit l'importance des souvenirs non-flash avec le temps
+ * - Marque les souvenirs consolidés
+ */
+export async function consolidateMemories(tamagochaiId: string): Promise<number> {
+  try {
+    const allMemories = await queryMemories(tamagochaiId, {
+      orderBy: 'recent',
+      limit: 500,
+    });
+
+    let consolidated = 0;
+
+    for (const memory of allMemories) {
+      // Les flash memories sont immunisés
+      if (memory.isFlash) continue;
+      // Déjà consolidé
+      if (memory.isConsolidated) continue;
+
+      // Vérifier l'âge
+      const ageHours = (Date.now() - new Date(memory.createdAt).getTime()) / (1000 * 60 * 60);
+      if (ageHours < MEMORY_CONFIG.consolidation.minAgeHours) continue;
+
+      // Appliquer le decay d'importance
+      const newImportance = Math.max(
+        1,
+        Math.round(memory.importance * MEMORY_CONFIG.consolidation.decayFactor),
+      );
+
+      if (newImportance !== memory.importance) {
+        await updateMemory(memory.id, {
+          importance: newImportance,
+          is_consolidated: 1,
+        });
+        consolidated++;
+      }
+    }
+
+    if (consolidated > 0) {
+      log.info(`Consolidated ${consolidated} memories`);
+    }
+
+    return consolidated;
+  } catch (error) {
+    log.error('Failed to consolidate memories:', error);
+    return 0;
+  }
+}
+
+// ============================================================
+// STATISTIQUES
+// ============================================================
+
+/**
+ * Retourne les stats de mémoire pour l'UI
+ */
+export async function getMemoryStats(tamagochaiId: string): Promise<{
+  total: number;
+  byType: Record<MemoryType, number>;
+  flashCount: number;
+  avgImportance: number;
+}> {
+  const total = await countMemories(tamagochaiId);
+
+  const types: MemoryType[] = ['fact', 'event', 'emotion', 'preference', 'relationship', 'topic', 'flash'];
+  const byType: Record<string, number> = {};
+
+  for (const type of types) {
+    const memories = await queryMemories(tamagochaiId, { type, limit: 1000 });
+    byType[type] = memories.length;
+  }
+
+  const flashMemories = await getFlashMemories(tamagochaiId);
+  const allMemories = await queryMemories(tamagochaiId, { limit: 1000 });
+  const avgImportance = allMemories.length > 0
+    ? allMemories.reduce((sum, m) => sum + m.importance, 0) / allMemories.length
+    : 0;
+
+  return {
+    total,
+    byType: byType as Record<MemoryType, number>,
+    flashCount: flashMemories.length,
+    avgImportance: Math.round(avgImportance * 10) / 10,
+  };
+}
+
+// ============================================================
+// HELPERS INTERNES
+// ============================================================
+
+/**
+ * Extrait le contexte autour d'un match dans un texte
+ */
+function extractContext(text: string, match: string, maxLength: number): string {
+  const index = text.toLowerCase().indexOf(match.toLowerCase());
+  if (index === -1) return truncate(text, maxLength);
+
+  const start = Math.max(0, index - 20);
+  const end = Math.min(text.length, index + match.length + 50);
+  let context = text.substring(start, end).trim();
+
+  if (start > 0) context = '...' + context;
+  if (end < text.length) context = context + '...';
+
+  return truncate(context, maxLength);
+}
+
+// ============================================================
+// RESET (pour debug/test)
+// ============================================================
+
+/**
+ * Note : le reset des memories se fait via DatabaseService.resetDatabase()
+ * Ce service n'a pas de reset spécifique car tout est en DB
+ */
+export function getMemoryServiceInfo(): string {
+  return `MemoryService — Config: min_importance=${MEMORY_CONFIG.extraction.minImportance}, max_per_message=${MEMORY_CONFIG.extraction.maxMemoriesPerMessage}, flash_threshold=${MEMORY_CONFIG.extraction.flashThreshold}`;
+}
+
+// ============================================================
+// FONCTIONS MANQUANTES (utilisées par Subconscious et Dream)
+// ============================================================
+
+/**
+ * Retourne les N souvenirs les plus importants
+ */
+export async function getTopMemories(tamagochaiId: string, count: number = 5): Promise<Memory[]> {
+  try {
+    const allMemories = await getMemoriesByType(tamagochaiId, 'fact');
+    const flashMemories = await getFlashMemories(tamagochaiId);
+    const combined = [...flashMemories, ...allMemories];
+
+    // Trier par importance (score) décroissant
+    combined.sort((a, b) => (b.importance || 0) - (a.importance || 0));
+
+    return combined.slice(0, count);
+  } catch (error) {
+    return [];
+  }
+}
+
+/**
+ * Retourne les N souvenirs les plus récents
+ */
+export async function getRecentMemories(tamagochaiId: string, count: number = 5): Promise<Memory[]> {
+  try {
+    const stats = await getMemoryStats(tamagochaiId);
+    // Utiliser findRelevantMemories avec un terme vide pour obtenir les récents
+    const all = await getMemoriesByType(tamagochaiId, 'event');
+    const facts = await getUserFacts(tamagochaiId);
+    const combined = [...all, ...facts];
+
+    // Trier par date décroissante
+    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return combined.slice(0, count);
+  } catch (error) {
+    return [];
+  }
+}
+
+/**
+ * Recherche des souvenirs par mot-clé
+ */
+export async function searchMemories(tamagochaiId: string, query: string, count: number = 5): Promise<Memory[]> {
+  return findRelevantMemories(tamagochaiId, query, count);
+}

@@ -1,0 +1,466 @@
+// src/services/llm/LLMOrchestrator.ts
+// Orchestrateur LLM du TamagochAI — MVP v3 CLEAN
+//
+// Supporte 5 providers via LLMProviderInstance interface.
+// Gère fallback, retry, streaming, stats.
+
+import {
+  LLMProviderName,
+  LLMProviderInstance,
+  LLMRequest,
+  LLMResponse,
+  LLMMessage,
+  LLMStats,
+} from '../../types';
+import { LLM_CONFIG } from '../../constants/config';
+import { GeminiProvider } from './providers/GeminiProvider';
+import { ClaudeProvider } from './providers/ClaudeProvider';
+import {
+  createOpenAIProvider,
+  createDeepSeekProvider,
+  createPerplexityProvider,
+} from './providers/OpenAICompatibleProvider';
+import { getSetting, setSetting } from '../database/DatabaseService';
+import { createLogger } from '../../utils/helpers';
+
+const log = createLogger('LLM');
+
+// ============================================================
+// MODELS PAR PROVIDER (défauts qui peuvent être overridés)
+// ============================================================
+
+const PROVIDER_MODELS: Record<LLMProviderName, string> = {
+  gemini: 'gemini-2.5-flash',
+  claude: 'claude-sonnet-4-5-20250929',
+  openai: 'gpt-4o-mini',
+  deepseek: 'deepseek-chat',
+  perplexity: 'sonar-pro',
+};
+
+// ============================================================
+// ÉTAT
+// ============================================================
+
+const providers: Map<LLMProviderName, LLMProviderInstance> = new Map();
+let preferredProvider: LLMProviderName = 'gemini';
+let fallbackOrder: LLMProviderName[] = ['gemini', 'deepseek', 'openai', 'claude', 'perplexity'];
+let isInitialized = false;
+
+const stats: LLMStats = {
+  totalRequests: 0,
+  totalErrors: 0,
+  totalTokens: 0,
+  averageLatencyMs: 0,
+  successRate: 100,
+  lastProvider: null,
+  providerUsage: {},
+};
+
+let totalLatencyMs = 0;
+
+// ============================================================
+// INITIALISATION
+// ============================================================
+
+export async function initLLM(): Promise<void> {
+  if (isInitialized) return;
+
+  // Charger le provider préféré depuis la DB
+  const savedProvider = await getSetting('preferred_provider');
+  if (savedProvider && isValidProvider(savedProvider)) {
+    preferredProvider = savedProvider as LLMProviderName;
+  }
+
+  // Charger les modèles custom
+  for (const name of Object.keys(PROVIDER_MODELS) as LLMProviderName[]) {
+    const savedModel = await getSetting(`model_${name}`);
+    if (savedModel) {
+      PROVIDER_MODELS[name] = savedModel;
+    }
+  }
+
+  // Instancier les providers
+  providers.set('gemini', new GeminiProvider());
+  providers.set('claude', new ClaudeProvider());
+  providers.set('openai', createOpenAIProvider());
+  providers.set('deepseek', createDeepSeekProvider());
+  providers.set('perplexity', createPerplexityProvider());
+
+  // Charger les clés API sauvegardées
+  for (const [name, provider] of providers) {
+    const savedKey = await getSetting(`api_key_${name}`);
+    if (savedKey) {
+      provider.setApiKey(savedKey);
+      log.info(`✅ ${name} key loaded`);
+    }
+  }
+
+  // Recalculer l'ordre de fallback
+  updateFallbackOrder();
+
+  isInitialized = true;
+  log.info(`LLM initialized — Preferred: ${preferredProvider}, Available: ${getAvailableProviders().join(', ')}`);
+}
+
+// ============================================================
+// API PRINCIPALE
+// ============================================================
+
+/**
+ * Envoie un message au LLM et retourne la réponse
+ */
+export async function chat(
+  systemPrompt: string,
+  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userMessage: string,
+  options?: {
+    temperature?: number;
+    maxTokens?: number;
+    provider?: LLMProviderName;
+    skipFallback?: boolean;
+  },
+): Promise<LLMResponse> {
+  ensureInitialized();
+
+  const messages: LLMMessage[] = chatHistory.map(m => ({
+    role: m.role as 'user' | 'assistant' | 'system',
+    content: m.content,
+  }));
+
+  const request: LLMRequest = {
+    systemPrompt,
+    messages,
+    userMessage,
+    temperature: options?.temperature ?? LLM_CONFIG.defaultParams.temperature,
+    maxTokens: options?.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens,
+    topP: LLM_CONFIG.defaultParams.topP,
+  };
+
+  const providerOrder = buildProviderOrder(options?.provider, options?.skipFallback);
+
+  for (const providerName of providerOrder) {
+    const provider = providers.get(providerName);
+    if (!provider || !provider.isAvailable()) {
+      continue;
+    }
+
+    try {
+      log.info(`Trying provider: ${providerName}`);
+      const response = await attemptWithRetry(provider, request);
+
+      if (response.success) {
+        recordSuccess(providerName, response);
+        return response;
+      }
+
+      log.warn(`Provider ${providerName} failed: ${response.error}`);
+    } catch (error: any) {
+      log.error(`Provider ${providerName} threw: ${error.message}`);
+    }
+  }
+
+  // Tous les providers ont échoué
+  stats.totalRequests++;
+  stats.totalErrors++;
+  updateSuccessRate();
+
+  return {
+    success: false,
+    content: generateFallbackMessage(),
+    provider: preferredProvider,
+    model: 'fallback',
+    tokensUsed: 0,
+    latencyMs: 0,
+    error: 'All providers failed',
+    finishReason: 'error',
+  };
+}
+
+/**
+ * Streaming — retourne un AsyncGenerator de chunks
+ */
+export async function* chatStream(
+  systemPrompt: string,
+  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userMessage: string,
+  options?: {
+    temperature?: number;
+    maxTokens?: number;
+  },
+): AsyncGenerator<string, LLMResponse, unknown> {
+  ensureInitialized();
+
+  const messages: LLMMessage[] = chatHistory.map(m => ({
+    role: m.role as 'user' | 'assistant' | 'system',
+    content: m.content,
+  }));
+
+  const request: LLMRequest = {
+    systemPrompt,
+    messages,
+    userMessage,
+    temperature: options?.temperature ?? LLM_CONFIG.defaultParams.temperature,
+    maxTokens: options?.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens,
+    topP: LLM_CONFIG.defaultParams.topP,
+  };
+
+  const providerOrder = buildProviderOrder();
+
+  for (const providerName of providerOrder) {
+    const provider = providers.get(providerName);
+    if (!provider || !provider.isAvailable()) continue;
+
+    // Vérifier si le provider supporte le streaming
+    if (!provider.generateStream) {
+      // Fallback vers non-stream
+      try {
+        const response = await provider.generate(request);
+        if (response.success) {
+          yield response.content;
+          recordSuccess(providerName, response);
+          return response;
+        }
+      } catch (e) {
+        continue;
+      }
+      continue;
+    }
+
+    try {
+      log.info(`Streaming via ${providerName}`);
+      const stream = provider.generateStream(request);
+      let lastResponse: LLMResponse | undefined;
+
+      for await (const chunk of stream) {
+        if (typeof chunk === 'string') {
+          yield chunk;
+        }
+      }
+
+      // Le return value du generator est la réponse finale
+      // On fait un appel normal pour obtenir les stats
+      // (le stream a déjà envoyé le contenu)
+      const finalResponse: LLMResponse = {
+        success: true,
+        content: '', // déjà streamé
+        provider: providerName,
+        model: PROVIDER_MODELS[providerName],
+        tokensUsed: 0,
+        latencyMs: 0,
+      };
+      recordSuccess(providerName, finalResponse);
+      return finalResponse;
+
+    } catch (error: any) {
+      log.error(`Stream failed for ${providerName}: ${error.message}`);
+      continue;
+    }
+  }
+
+  // Fallback
+  const fallbackMsg = generateFallbackMessage();
+  yield fallbackMsg;
+  return {
+    success: false,
+    content: fallbackMsg,
+    provider: preferredProvider,
+    model: 'fallback',
+    tokensUsed: 0,
+    latencyMs: 0,
+    error: 'All providers failed',
+  };
+}
+
+// ============================================================
+// RETRY LOGIC
+// ============================================================
+
+async function attemptWithRetry(
+  provider: LLMProviderInstance,
+  request: LLMRequest,
+  maxRetries: number = LLM_CONFIG.maxRetries,
+): Promise<LLMResponse> {
+  let lastError: string = '';
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const startTime = Date.now();
+      const response = await provider.generate(request);
+      response.latencyMs = Date.now() - startTime;
+      return response;
+    } catch (error: any) {
+      lastError = error.message;
+      if (attempt < maxRetries) {
+        const delay = LLM_CONFIG.retryDelay * Math.pow(2, attempt);
+        log.warn(`Retry ${attempt + 1}/${maxRetries} after ${delay}ms: ${lastError}`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+
+  return {
+    success: false,
+    content: '',
+    provider: provider.name,
+    model: '',
+    tokensUsed: 0,
+    latencyMs: 0,
+    error: lastError,
+    finishReason: 'error',
+  };
+}
+
+// ============================================================
+// CONFIG API
+// ============================================================
+
+export async function setApiKey(provider: LLMProviderName, key: string): Promise<boolean> {
+  const instance = providers.get(provider);
+  if (!instance) return false;
+
+  instance.setApiKey(key);
+
+  // Valider la clé si le provider le supporte
+  if (instance.validateApiKey) {
+    const valid = await instance.validateApiKey(key);
+    if (!valid) {
+      instance.setApiKey(''); // Reset
+      return false;
+    }
+  }
+
+  await setSetting(`api_key_${provider}`, key);
+  updateFallbackOrder();
+  log.info(`API key set for ${provider}`);
+  return true;
+}
+
+export async function setPreferredProvider(provider: LLMProviderName): Promise<void> {
+  preferredProvider = provider;
+  await setSetting('preferred_provider', provider);
+  updateFallbackOrder();
+  log.info(`Preferred provider: ${provider}`);
+}
+
+export async function setProviderModel(provider: LLMProviderName, model: string): Promise<void> {
+  PROVIDER_MODELS[provider] = model;
+  await setSetting(`model_${provider}`, model);
+  log.info(`Model for ${provider}: ${model}`);
+}
+
+// ============================================================
+// GETTERS
+// ============================================================
+
+export function getPreferredProvider(): LLMProviderName {
+  return preferredProvider;
+}
+
+export function getAvailableProviders(): LLMProviderName[] {
+  return Array.from(providers.entries())
+    .filter(([_, p]) => p.isAvailable())
+    .map(([name]) => name);
+}
+
+export function getAllSupportedProviders(): Array<{
+  name: LLMProviderName;
+  label: string;
+  model: string;
+  isConfigured: boolean;
+  isPreferred: boolean;
+}> {
+  const providerLabels: Record<LLMProviderName, string> = {
+    gemini: '⚡ Gemini',
+    claude: '🟣 Claude',
+    openai: '🟢 OpenAI',
+    deepseek: '🔵 DeepSeek',
+    perplexity: '🔍 Perplexity',
+  };
+
+  return (Object.keys(PROVIDER_MODELS) as LLMProviderName[]).map(name => ({
+    name,
+    label: providerLabels[name] || name,
+    model: PROVIDER_MODELS[name],
+    isConfigured: !!providers.get(name)?.getApiKey(),
+    isPreferred: name === preferredProvider,
+  }));
+}
+
+export function getLLMStats(): LLMStats {
+  return { ...stats };
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function ensureInitialized(): void {
+  if (!isInitialized) {
+    log.warn('LLM not initialized, calling initLLM...');
+    // Sync fallback — real init should be called before
+  }
+}
+
+function isValidProvider(name: string): boolean {
+  return ['gemini', 'claude', 'openai', 'deepseek', 'perplexity'].includes(name);
+}
+
+function buildProviderOrder(
+  specific?: LLMProviderName,
+  skipFallback?: boolean,
+): LLMProviderName[] {
+  if (specific) return [specific];
+  if (skipFallback) return [preferredProvider];
+  return fallbackOrder;
+}
+
+function updateFallbackOrder(): void {
+  // Preferred d'abord, puis les autres disponibles
+  const available = getAvailableProviders();
+  const order: LLMProviderName[] = [];
+
+  if (available.includes(preferredProvider)) {
+    order.push(preferredProvider);
+  }
+
+  // Ajouter les fallbacks dans l'ordre par défaut
+  const defaultOrder: LLMProviderName[] = ['gemini', 'deepseek', 'openai', 'claude', 'perplexity'];
+  for (const name of defaultOrder) {
+    if (!order.includes(name) && available.includes(name)) {
+      order.push(name);
+    }
+  }
+
+  fallbackOrder = order.length > 0 ? order : ['gemini'];
+}
+
+function recordSuccess(providerName: LLMProviderName, response: LLMResponse): void {
+  stats.totalRequests++;
+  stats.totalTokens += response.tokensUsed || 0;
+  totalLatencyMs += response.latencyMs || 0;
+  stats.averageLatencyMs = Math.round(totalLatencyMs / stats.totalRequests);
+  stats.lastProvider = providerName;
+  stats.providerUsage[providerName] = (stats.providerUsage[providerName] || 0) + 1;
+  updateSuccessRate();
+}
+
+function updateSuccessRate(): void {
+  if (stats.totalRequests === 0) {
+    stats.successRate = 100;
+  } else {
+    stats.successRate = Math.round(
+      ((stats.totalRequests - stats.totalErrors) / stats.totalRequests) * 100,
+    );
+  }
+}
+
+function generateFallbackMessage(): string {
+  const messages = [
+    "Je... je n'arrive pas à penser clairement en ce moment. Réessaie ?",
+    'Mes circuits sont un peu embrouillés... donne-moi un moment.',
+    "Hmm, quelque chose bloque dans ma tête. Tu peux reformuler ?",
+    "Oups, j'ai eu un petit bug. On réessaie ?",
+    "Le signal est faible... je suis là mais j'ai du mal à répondre.",
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}

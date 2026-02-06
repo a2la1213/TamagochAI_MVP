@@ -1,0 +1,1 @@
+export { TamagochaiAvatar } from './TamagochaiAvatar';
