@@ -155,71 +155,29 @@ export async function chat(
         return response;
       }
 
-      log.warn(`Provider ${providerName} failed: ${response.error}`);
+      errors.push(`${providerName}: ${response.error || 'unknown error'}`);
+      log.warn(`Provider ${providerName} returned error: ${response.error}`);
     } catch (error: any) {
       const errMsg = error instanceof Error ? error.message : String(error);
       errors.push(`${providerName}: ${errMsg}`);
-      log.error(`Provider ${providerName} failed: ${errMsg}`);
-      continue;
-
-    // Vérifier si le provider supporte le streaming
-    if (!provider.generateStream) {
-      // Fallback vers non-stream
-      try {
-        const response = await provider.generate(request);
-        if (response.success) {
-          yield response.content;
-          recordSuccess(providerName, response);
-          return response;
-        }
-      } catch (e) {
-        continue;
-      }
-      continue;
-    }
-
-    try {
-      log.info(`Streaming via ${providerName}`);
-      const stream = provider.generateStream(request);
-      let lastResponse: LLMResponse | undefined;
-
-      for await (const chunk of stream) {
-        if (typeof chunk === 'string') {
-          yield chunk;
-        }
-      }
-
-      // Le return value du generator est la réponse finale
-      // On fait un appel normal pour obtenir les stats
-      // (le stream a déjà envoyé le contenu)
-      const finalResponse: LLMResponse = {
-        success: true,
-        content: '', // déjà streamé
-        provider: providerName,
-        model: PROVIDER_MODELS[providerName],
-        tokensUsed: 0,
-        latencyMs: 0,
-      };
-      recordSuccess(providerName, finalResponse);
-      return finalResponse;
-
-    } catch (error: any) {
-      log.error(`Stream failed for ${providerName}: ${error.message}`);
-      continue;
+      log.error(`Provider ${providerName} threw: ${errMsg}`);
     }
   }
 
-  // Fallback
-  const fallbackMsg = generateFallbackMessage();
-  yield fallbackMsg;
+  // Tous les providers ont échoué
+  stats.totalRequests++;
+  stats.totalErrors++;
+  updateSuccessRate();
+
   return {
     success: false,
-    content: fallbackMsg,
+    content: generateFallbackMessage(),
     provider: preferredProvider,
     model: 'fallback',
     tokensUsed: 0,
     latencyMs: 0,
-    error: 'All providers failed',
+    error: `All providers failed: ${errors.join('; ')}`,
+    finishReason: 'error',
   };
 }
 
