@@ -160,6 +160,9 @@ export const useTamagochaiStore = create<TamagochaiState>((set, get) => ({
     if (get().isInitializing || get().isInitialized) return;
     set({ isInitializing: true, error: null });
 
+    // Initialiser le LLM tôt (nécessaire pour configurer les clés API sur BirthScreen)
+    try { await initLLM(); } catch (e) { console.warn('LLM early init:', e); }
+
     try {
       log.info('🚀 Initializing TamagochAI...');
 
