@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   stageEmoji: { fontSize: 48, marginBottom: 8 },
   stageName: { fontSize: 22, fontWeight: '700', color: THEME.colors.text, marginBottom: 4 },
-  stageDescription: { fontSize: 13, color: THEME.colors.textSecondary, textAlign: 'center', marginBottom: 16, paddingHorizontal: 16 },
+  stageDescription: { fontSize: 13, color: THEME.colors.textSecondary, textAlign: 'center', marginBottom: 16, paddingHorizontal: 4 },
   xpContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   xpText: { fontSize: 18, fontWeight: '700', color: THEME.colors.primary },
   xpNext: { fontSize: 14, color: THEME.colors.textSecondary },

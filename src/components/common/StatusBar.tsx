@@ -50,7 +50,7 @@ export function StatusBar() {
       {/* Batterie */}
       <View style={styles.item}>
         <Text style={styles.emoji}>{isCharging ? '⚡' : '🔋'}</Text>
-        <Text style={[styles.label, percent <= 15 && styles.criticalText]}>
+        <Text style={[styles.label, styles.labelRight, percent <= 15 && styles.criticalText]}>
           {percent}%
         </Text>
       </View>
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    minWidth: 70,
+    flex: 1,
   },
   centerItem: {
     flexDirection: 'row',
@@ -95,6 +95,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: THEME.colors.primary,
+  },
+  labelRight: {
+    textAlign: 'right',
   },
   criticalText: {
     color: THEME.colors.error,

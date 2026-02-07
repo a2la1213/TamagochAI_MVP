@@ -434,15 +434,14 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 14,
     color: THEME.colors.textSecondary,
-    flexShrink: 0,
+    flex: 0,
     marginRight: 12,
-    minWidth: 130,
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
     color: THEME.colors.text,
-    flexShrink: 1,
+    flex: 1,
     textAlign: 'right',
   },
   separator: {

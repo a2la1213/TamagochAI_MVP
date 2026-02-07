@@ -47,9 +47,8 @@ function formatTime(isoDate: string): string {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
+    marginVertical: 3,
     marginHorizontal: 8,
-    maxWidth: '95%',
   },
   userContainer: {
     alignSelf: 'flex-end',
@@ -65,10 +64,12 @@ const styles = StyleSheet.create({
   userBubble: {
     backgroundColor: THEME.colors.primary,
     borderBottomRightRadius: 4,
+    maxWidth: '88%',
   },
   assistantBubble: {
     backgroundColor: THEME.colors.surface,
     borderBottomLeftRadius: 4,
+    maxWidth: '95%',
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },

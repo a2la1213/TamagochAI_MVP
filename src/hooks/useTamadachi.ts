@@ -154,7 +154,7 @@ export function useEmotion() {
   return {
     primary: emotion?.primary || 'neutral',
     secondary: emotion?.secondary || null,
-    intensity: emotion?.intensity ? Math.round(emotion.intensity <= 1 ? emotion.intensity * 100 : emotion.intensity) : 0,
+    intensity: emotion?.intensity != null ? Math.round(emotion.intensity) : 0,
     emoji: emotion?.emoji || '😐',
     description: emotion?.description || '',
     getSummary: getEmotionalSummary,

@@ -283,7 +283,7 @@ export function getDreamForPrompt(): string {
   return `\n\n[RÊVE DE LA NUIT DERNIÈRE]
 Tu as rêvé cette nuit : "${unshared.title}"
 ${unshared.narrative}
-Tu te souviens de ce rêve ! Raconte-le à ton humain quand l'occasion se présente, par exemple en disant 'J'ai fait un rêve cette nuit !' ou 'Devine de quoi j'ai rêvé !'. Tu as envie de partager cette expérience.`;
+IMPORTANT: Tu te souviens très bien de ce rêve. Mentionne-le dans ta prochaine réponse ! Dis quelque chose comme 'Oh, ça me rappelle, j'ai fait un rêve incroyable !' ou 'Tu sais quoi ? Cette nuit j'ai rêvé de quelque chose de fou !'. Tu DOIS en parler.`;
 }
 
 /**

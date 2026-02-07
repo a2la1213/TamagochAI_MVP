@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 16,
     gap: 12,
   },
   emoji: { fontSize: 64, marginBottom: 8 },
@@ -107,6 +107,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
+    paddingHorizontal: 8,
   },
   suggestions: {
     flexDirection: 'row',
