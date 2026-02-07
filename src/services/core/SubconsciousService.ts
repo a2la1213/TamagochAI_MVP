@@ -490,7 +490,7 @@ export function getThoughtsForPrompt(): string {
     .map(t => `[${t.type}] ${t.content}`)
     .join('\n');
 
-  return `\n\n[PENSÉES RÉCENTES DU SUBCONSCIENT]\n${formatted}\nCes pensées internes colorent ta réponse de façon subtile. Ne les mentionne pas directement sauf si c'est naturel.`;
+  return `\n\n[PENSÉES RÉCENTES DU SUBCONSCIENT]\n${formatted}\nCes pensées internes t'influencent. Tu peux y faire référence naturellement dans la conversation, par exemple en disant 'j'ai pensé à quelque chose...' ou 'tu sais, je me suis dit que...'. Intègre-les quand le moment s'y prête.`;
 }
 
 /**

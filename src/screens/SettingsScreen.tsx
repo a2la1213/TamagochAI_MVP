@@ -436,6 +436,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     flexShrink: 0,
     marginRight: 12,
+    minWidth: 130,
   },
   infoValue: {
     fontSize: 14,

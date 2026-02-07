@@ -6,6 +6,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Message } from '../../types';
 import { THEME } from '../../constants/config';
 
+const EMOTION_FR: Record<string, string> = {
+  neutral: 'Neutre', joy: 'Joie', sadness: 'Triste', anger: 'Colère',
+  fear: 'Peur', surprise: 'Surprise', love: 'Amour', curiosity: 'Curiosité',
+  excitement: 'Excité', pride: 'Fierté', calm: 'Calme', anxiety: 'Anxiété',
+  confusion: 'Confusion', disgust: 'Dégoût', melancholy: 'Mélancolie', shame: 'Honte',
+};
+
 interface ChatBubbleProps {
   message: Message;
   isStreaming?: boolean;
@@ -23,7 +30,7 @@ function ChatBubbleInner({ message, isStreaming }: ChatBubbleProps) {
         </Text>
       </View>
       {message.emotionAtTime && !isUser && (
-        <Text style={styles.emotionTag}>{message.emotionAtTime}</Text>
+        <Text style={styles.emotionTag}>{EMOTION_FR[message.emotionAtTime || ''] || message.emotionAtTime}</Text>
       )}
     </View>
   );
@@ -41,8 +48,8 @@ function formatTime(isoDate: string): string {
 const styles = StyleSheet.create({
   container: {
     marginVertical: 4,
-    marginHorizontal: 12,
-    maxWidth: '100%',
+    marginHorizontal: 8,
+    maxWidth: '95%',
   },
   userContainer: {
     alignSelf: 'flex-end',
@@ -51,9 +58,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   bubble: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
   userBubble: {
     backgroundColor: THEME.colors.primary,

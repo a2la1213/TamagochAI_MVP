@@ -73,6 +73,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    minWidth: 70,
   },
   centerItem: {
     flexDirection: 'row',
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     color: THEME.colors.textSecondary,
-    flexShrink: 1,
+    flexShrink: 0,
   },
   xpText: {
     fontSize: 14,

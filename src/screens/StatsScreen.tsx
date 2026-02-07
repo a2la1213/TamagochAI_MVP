@@ -176,7 +176,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
               <Text style={styles.emotionEmoji}>{emoji}</Text>
               <View>
                 <Text style={styles.emotionPrimary}>{EMOTION_FR[primary] || primary}</Text>
-                <Text style={styles.emotionIntensity}>Intensité : {typeof intensity === 'number' ? (intensity < 1 ? Math.round(intensity * 100) : Math.round(intensity)) : 0}%</Text>
+                <Text style={styles.emotionIntensity}>Intensité : {intensity}%</Text>
               </View>
             </View>
           </View>
@@ -222,7 +222,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
                   <Text style={styles.dreamTitle}>{dream.title}</Text>
                   {dream.wasShared && <Text style={styles.dreamShared}>raconté</Text>}
                 </View>
-                <Text style={styles.dreamNarrative} >
+                <Text selectable style={styles.dreamNarrative}>
                   {dream.narrative}
                 </Text>
                 <Text style={styles.dreamDate}>
@@ -240,7 +240,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
             {thoughts.map(thought => (
               <View key={thought.id} style={styles.thoughtCard}>
                 <Text style={styles.thoughtType}>[{thought.type}]</Text>
-                <Text style={styles.thoughtContent}>{thought.content}</Text>
+                <Text selectable style={styles.thoughtContent}>{thought.content}</Text>
               </View>
             ))}
             <Text style={styles.thoughtCount}>
