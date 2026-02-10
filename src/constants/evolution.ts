@@ -287,8 +287,8 @@ export const XP_MODES: Record<XPMode, XPModeConfig> = {
   },
   prototype: {
     mode: 'prototype',
-    multiplier: 10,
-    label: 'Prototype (x10)',
+    multiplier: 3,
+    label: 'Prototype (x3)',
     description: 'Évolution accélérée pour tester — XP multiplié par 10',
   },
   debug: {
@@ -306,10 +306,10 @@ export const XP_MODES: Record<XPMode, XPModeConfig> = {
 // ============================================================
 
 export const ANTI_GRIND: AntiGrindConfig = {
-  maxXPPerHour: 80,        // Max 200 XP par heure
-  maxXPPerDay: 300,        // Max 1000 XP par jour
-  cooldownBetweenXP: 30,    // 10 secondes entre deux gains d'XP
-  diminishingReturns: 0.7,  // Chaque gain consécutif = 80% du précédent
+  maxXPPerHour: 200,        // Max 200 XP par heure
+  maxXPPerDay: 800,        // Max 1000 XP par jour
+  cooldownBetweenXP: 5,    // 10 secondes entre deux gains d'XP
+  diminishingReturns: 0.9,  // Chaque gain consécutif = 80% du précédent
 };
 
 // ============================================================
