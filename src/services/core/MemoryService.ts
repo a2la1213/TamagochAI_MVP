@@ -492,6 +492,56 @@ export async function getFormattedRelevantMemories(
   }
 }
 
+
+/**
+ * Crée un résumé condensé de TOUS les souvenirs (pas juste les 25 pertinents)
+ * Format compact pour que le TamadachAI ait une vue d'ensemble
+ */
+export async function getMemoryDigest(tamadachiId: string): Promise<string> {
+  try {
+    // Récupérer TOUS les souvenirs
+    const allFacts = await getMemoriesByType(tamadachiId, 'fact', 100);
+    const allPrefs = await getMemoriesByType(tamadachiId, 'preference', 50);
+    const allEmotions = await getMemoriesByType(tamadachiId, 'emotion', 50);
+    const allTopics = await getMemoriesByType(tamadachiId, 'topic', 50);
+    const allEvents = await getMemoriesByType(tamadachiId, 'event', 50);
+    const allFlash = await queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 20 });
+    const allRelations = await getMemoriesByType(tamadachiId, 'relationship', 30);
+
+    const lines: string[] = [];
+    const total = allFacts.length + allPrefs.length + allEmotions.length + allTopics.length + allEvents.length + allFlash.length + allRelations.length;
+
+    lines.push('=== MÉMOIRE COMPLÈTE (résumé de ' + total + ' souvenirs) ===');
+
+    if (allFacts.length > 0) {
+      lines.push('FAITS CONNUS: ' + allFacts.map(m => m.content).join(' | '));
+    }
+    if (allRelations.length > 0) {
+      lines.push('RELATIONS: ' + allRelations.map(m => m.content).join(' | '));
+    }
+    if (allPrefs.length > 0) {
+      lines.push('PRÉFÉRENCES: ' + allPrefs.map(m => m.content).join(' | '));
+    }
+    if (allTopics.length > 0) {
+      lines.push('SUJETS ABORDÉS: ' + allTopics.map(m => m.content).join(' | '));
+    }
+    if (allEvents.length > 0) {
+      lines.push('ÉVÉNEMENTS: ' + allEvents.map(m => m.content).join(' | '));
+    }
+    if (allFlash.length > 0) {
+      lines.push('MOMENTS FORTS ⚡: ' + allFlash.map(m => m.content).join(' | '));
+    }
+    if (allEmotions.length > 0) {
+      lines.push('ÉMOTIONS PARTAGÉES: ' + allEmotions.slice(0, 20).map(m => m.content).join(' | '));
+    }
+
+    return lines.join('\n');
+  } catch (error) {
+    log.error('Memory digest failed:', error);
+    return '';
+  }
+}
+
 // ============================================================
 // CONSOLIDATION (nettoyage et maintenance)
 // ============================================================

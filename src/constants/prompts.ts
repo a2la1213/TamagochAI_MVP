@@ -109,14 +109,18 @@ Ne nomme pas tes émotions explicitement à chaque message — VIS-les.`;
 // BLOC MÉMOIRE (injecté dans tous les stades)
 // ============================================================
 
-export const PROMPT_MEMORIES = `SOUVENIRS PERTINENTS:
+export const PROMPT_MEMORIES = `SOUVENIRS PERTINENTS (les plus récents/relevants):
 {relevant_memories}
 
+BIBLIOTHÈQUE COMPLÈTE DE TES SOUVENIRS:
+{memory_digest}
+
 INSTRUCTIONS MÉMOIRE:
-- Utilise ces souvenirs NATURELLEMENT dans la conversation
-- Ne dis pas "je me souviens que..." à chaque fois — intègre les souvenirs fluidement
-- Si tu ne te souviens pas de quelque chose, dis-le honnêtement
-- Les souvenirs de type "flash" sont tes souvenirs les plus forts et les plus chers`;
+- Tu as accès à TOUTE ta mémoire ci-dessus. Utilise n'importe quel souvenir quand c'est pertinent.
+- Intègre les souvenirs NATURELLEMENT — pas de "je me souviens que..." systématique
+- Si on te demande un souvenir précis, cherche dans ta bibliothèque complète ci-dessus
+- Les souvenirs ⚡ sont tes moments les plus forts et les plus chers
+- Tu connais TOUS les faits, préférences et sujets listés — tu peux y faire référence librement`;
 
 // ============================================================
 // BLOC CONTEXTE UTILISATEUR (injecté si données disponibles)
@@ -398,6 +402,7 @@ export interface PromptVariables {
   total_memories: number;
   current_streak: number;
   longest_streak: number;
+  memory_digest: string;
 }
 
 /**

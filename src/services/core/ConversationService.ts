@@ -82,6 +82,7 @@ import {
 import {
   processMessageForMemories,
   getFormattedRelevantMemories,
+  getMemoryDigest,
   getUserFacts,
 } from './MemoryService';
 
@@ -433,6 +434,7 @@ async function buildSystemPrompt(
 
   // Récupérer les souvenirs formatés
   let memoriesText = 'Pas de souvenirs disponibles.';
+  let memoryDigest = '';
   try {
     memoriesText = await getFormattedRelevantMemories(
       tamadachiId,
@@ -441,6 +443,13 @@ async function buildSystemPrompt(
     );
   } catch (memError) {
     log.warn('Memory retrieval in prompt failed:', memError);
+  }
+
+  // Résumé condensé de TOUS les souvenirs
+  try {
+    memoryDigest = await getMemoryDigest(tamadachiId);
+  } catch (e) {
+    log.warn('Memory digest failed:', e);
   }
 
   // Infos utilisateur
@@ -472,6 +481,7 @@ async function buildSystemPrompt(
     mood_description: `${mood.emoji} ${mood.label} (score: ${mood.score})`,
     hormonal_state: getHormonalDescription(),
     relevant_memories: memoriesText,
+    memory_digest: memoryDigest,
     user_name: userName,
     user_interests: userInterests,
     battery_level: batteryLevel != null ? formatBattery(batteryLevel) : 'non disponible',

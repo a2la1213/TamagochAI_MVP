@@ -1144,7 +1144,7 @@ function mapRowToTamadachi(row: any): Tamadachi {
       totalMemories: row.total_memories,
       totalXP: row.total_xp,
       currentStage: row.stage as EvolutionStage,
-      totalDays: 0,
+      totalDays: Math.max(1, Math.floor((Date.now() - new Date(row.birth_date).getTime()) / (1000 * 60 * 60 * 24))),
       daysSinceBirth: Math.floor(
         (Date.now() - new Date(row.birth_date).getTime()) / (1000 * 60 * 60 * 24)
       ),
