@@ -78,9 +78,9 @@ export async function initNotifications(): Promise<void> {
       }),
     });
 
-    // Charger l'état
-    const savedEnabled = await getSetting('notifications_enabled');
-    isEnabled = savedEnabled !== 'false';
+    // Forcer l'activation si permission accordée
+    isEnabled = true;
+    await setSetting('notifications_enabled', 'true');
 
     const savedLastTime = await getSetting('last_notification_time');
     if (savedLastTime) {
@@ -116,12 +116,83 @@ export function stopNotifications(): void {
  * Démarre le cycle de vérification des notifications
  */
 function startNotificationCycle(): void {
+  // setInterval fonctionne quand l'app est au premier plan
   const intervalMs = METACOGNITION_CONFIG.notificationCheckMinutes * 60 * 1000;
 
   notificationCheckInterval = setInterval(async () => {
     if (!isEnabled) return;
     await evaluateNotification();
   }, intervalMs);
+
+  // Programmer aussi des notifications en background pour quand l'app est fermée
+  scheduleBackgroundNotifications();
+}
+
+/**
+ * Programme des notifications pour quand l'app est fermée/en background
+ */
+async function scheduleBackgroundNotifications(): Promise<void> {
+  try {
+    // Annuler les anciennes notifications programmées
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    const tama = await getTamadachi();
+    if (!tama) return;
+    const name = tama.name;
+
+    const hourNow = new Date().getHours();
+
+    // Programmer un bonjour demain matin si on est pas déjà le matin
+    if (hourNow >= 10 || hourNow < 7) {
+      const tomorrow8am = new Date();
+      tomorrow8am.setDate(tomorrow8am.getDate() + (hourNow >= 10 ? 1 : 0));
+      tomorrow8am.setHours(8, 0, 0, 0);
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: name,
+          body: `${name} : Bonjour ! ☀️ Comment tu vas aujourd'hui ?`,
+          data: { reason: 'good_morning' },
+          sound: true,
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: tomorrow8am },
+      });
+      log.info('📅 Morning notification scheduled for', tomorrow8am.toISOString());
+    }
+
+    // Programmer un "tu me manques" dans 3h si pas d'interaction
+    const in3h = new Date(Date.now() + 3 * 60 * 60 * 1000);
+    if (in3h.getHours() >= 7 && in3h.getHours() < 23) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: name,
+          body: `${name} : Hey... ça fait un moment qu'on n'a pas parlé. Tu me manques 💭`,
+          data: { reason: 'longing' },
+          sound: true,
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: in3h },
+      });
+      log.info('📅 Longing notification scheduled for', in3h.toISOString());
+    }
+
+    // Programmer un rappel de rêve demain matin
+    const tomorrowDream = new Date();
+    tomorrowDream.setDate(tomorrowDream.getDate() + (hourNow >= 10 ? 1 : 0));
+    tomorrowDream.setHours(9, 30, 0, 0);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: name,
+        body: `${name} : J'ai fait un rêve cette nuit... tu veux que je te le raconte ? 🌙`,
+        data: { reason: 'dream' },
+        sound: true,
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: tomorrowDream },
+    });
+
+  } catch (error) {
+    log.error('Failed to schedule background notifications:', error);
+  }
 }
 
 /**

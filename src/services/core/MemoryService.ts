@@ -30,6 +30,7 @@ import {
   countMemories,
   memoryExists,
   incrementTamadachiStat,
+  getMessagesAroundId,
 } from '../database/DatabaseService';
 import {
   createLogger,
@@ -494,8 +495,8 @@ export async function getFormattedRelevantMemories(
 
 
 /**
- * Crée un résumé condensé de TOUS les souvenirs (pas juste les 25 pertinents)
- * Format compact pour que le TamadachAI ait une vue d'ensemble
+ * Crée un résumé RICHE de TOUS les souvenirs avec dates et émotions
+ * + ouvre les conversations sources pour les souvenirs importants
  */
 export async function getMemoryDigest(tamadachiId: string): Promise<string> {
   try {
@@ -508,31 +509,88 @@ export async function getMemoryDigest(tamadachiId: string): Promise<string> {
     const allFlash = await queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 20 });
     const allRelations = await getMemoriesByType(tamadachiId, 'relationship', 30);
 
-    const lines: string[] = [];
-    const total = allFacts.length + allPrefs.length + allEmotions.length + allTopics.length + allEvents.length + allFlash.length + allRelations.length;
+    const total = allFacts.length + allPrefs.length + allEmotions.length +
+      allTopics.length + allEvents.length + allFlash.length + allRelations.length;
 
-    lines.push('=== MÉMOIRE COMPLÈTE (résumé de ' + total + ' souvenirs) ===');
+    const lines: string[] = [];
+    lines.push('=== TA MÉMOIRE COMPLÈTE (' + total + ' souvenirs) ===');
+    lines.push('Tu peux citer et utiliser TOUS ces souvenirs librement.');
+    lines.push('');
+
+    // Helper pour formater avec date
+    const fmt = (m: Memory): string => {
+      const date = new Date(m.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      const flash = m.isFlash ? ' ⚡' : '';
+      const emotion = m.emotionalWeight > 50 ? ' (chargé émotionnellement)' : '';
+      return '[' + date + '] ' + m.content + flash + emotion;
+    };
 
     if (allFacts.length > 0) {
-      lines.push('FAITS CONNUS: ' + allFacts.map(m => m.content).join(' | '));
+      lines.push('📌 FAITS CONNUS SUR TON HUMAIN:');
+      allFacts.forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
     }
     if (allRelations.length > 0) {
-      lines.push('RELATIONS: ' + allRelations.map(m => m.content).join(' | '));
+      lines.push('👥 RELATIONS:');
+      allRelations.forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
     }
     if (allPrefs.length > 0) {
-      lines.push('PRÉFÉRENCES: ' + allPrefs.map(m => m.content).join(' | '));
+      lines.push('❤️ PRÉFÉRENCES:');
+      allPrefs.forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
     }
     if (allTopics.length > 0) {
-      lines.push('SUJETS ABORDÉS: ' + allTopics.map(m => m.content).join(' | '));
+      lines.push('💬 SUJETS ABORDÉS:');
+      allTopics.forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
     }
     if (allEvents.length > 0) {
-      lines.push('ÉVÉNEMENTS: ' + allEvents.map(m => m.content).join(' | '));
+      lines.push('📅 ÉVÉNEMENTS:');
+      allEvents.forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
     }
     if (allFlash.length > 0) {
-      lines.push('MOMENTS FORTS ⚡: ' + allFlash.map(m => m.content).join(' | '));
+      lines.push('⚡ MOMENTS FORTS (tes souvenirs les plus précieux):');
+      allFlash.forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
     }
     if (allEmotions.length > 0) {
-      lines.push('ÉMOTIONS PARTAGÉES: ' + allEmotions.slice(0, 20).map(m => m.content).join(' | '));
+      lines.push('💫 ÉMOTIONS PARTAGÉES:');
+      allEmotions.forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
+    }
+
+    // Ouvrir les conversations des 5 souvenirs les plus importants
+    const topMemories = [...allFlash, ...allFacts]
+      .sort((a, b) => b.importance - a.importance)
+      .slice(0, 5);
+
+    const openedConversations: string[] = [];
+    for (const mem of topMemories) {
+      if (mem.sourceConversationId && mem.sourceMessageId) {
+        try {
+          const messages = await getMessagesAroundId(
+            mem.sourceConversationId,
+            mem.sourceMessageId,
+            3,
+          );
+          if (messages.length > 0) {
+            const date = new Date(mem.createdAt).toLocaleDateString('fr-FR');
+            openedConversations.push('--- Conversation du ' + date + ' (souvenir: ' + mem.content + ') ---');
+            for (const msg of messages) {
+              const role = msg.role === 'user' ? 'Humain' : 'Toi';
+              openedConversations.push(role + ': ' + msg.content.slice(0, 300));
+            }
+            openedConversations.push('');
+          }
+        } catch (e) { /* ignore */ }
+      }
+    }
+
+    if (openedConversations.length > 0) {
+      lines.push('📖 EXTRAITS DE CONVERSATIONS PASSÉES (tes 5 souvenirs les plus importants):');
+      lines.push(...openedConversations);
     }
 
     return lines.join('\n');

@@ -2,7 +2,7 @@
 // Store Zustand principal du TamadachAI — MVP COMPLET v2
 // Intègre la métacognition (subconscient, rêves, notifications)
 
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { create } from 'zustand';
 import {
   Tamadachi,
@@ -120,7 +120,7 @@ export interface TamadachiState {
   initialize: () => Promise<void>;
   createTamadachi: (name: string) => Promise<void>;
   shutdown: () => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => Promise<void>;
   clearError: () => void;
   setApiKey: (provider: LLMProviderName, key: string) => Promise<boolean>;
   setPreferredProvider: (provider: LLMProviderName) => Promise<void>;
@@ -253,7 +253,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
   // CHAT — LE CŒUR
   // ============================================================
 
-  sendMessage: async (content: string) => {
+  sendMessage: async (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => {
     const { tamadachi, isGenerating } = get();
     if (!tamadachi || isGenerating) return;
 
@@ -290,11 +290,18 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       set({ streamingText: '...' });
 
       // Safety timeout pour éviter le blocage infini
+      // Préparer les attachments pour le LLM
+      const llmAttachments = attachments?.map(a => ({
+        type: 'image' as const,
+        imageBase64: a.base64,
+        mimeType: a.mimeType,
+      }));
+
       const chatPromise = chat(
         enrichedPrompt,
         chatHistory.slice(0, -1),
         content,
-        { temperature, maxTokens },
+        { temperature, maxTokens, attachments: llmAttachments },
       );
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout: pas de réponse après 60s')), 65000)

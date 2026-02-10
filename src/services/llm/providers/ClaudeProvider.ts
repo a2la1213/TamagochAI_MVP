@@ -229,7 +229,7 @@ export class ClaudeProvider implements LLMProviderInstance {
 
   private buildRequestBody(request: LLMRequest): any {
     const systemContent = request.systemPrompt || '';
-    const chatMessages = [...request.messages, { role: 'user' as const, content: request.userMessage }];
+    const chatMessages = [...request.messages, { role: 'user' as const, content: request.userMessage, attachments: request.userAttachments }];
 
     // Claude attend un format spécifique : system séparé, messages alternés user/assistant
     const messages = chatMessages.map((msg: any) => ({

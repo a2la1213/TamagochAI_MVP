@@ -460,6 +460,50 @@ export async function getAllRecentMessages(
 }
 
 /**
+ * Récupère les messages autour d'un message source (contexte de conversation)
+ */
+export async function getMessagesAroundId(
+  conversationId: string,
+  messageId: string,
+  radius: number = 3,
+): Promise<Message[]> {
+  const db = await getDB();
+  // Récupérer les messages avant et après dans la même conversation
+  const rows = await db.getAllAsync<any>(
+    `SELECT * FROM messages
+     WHERE conversation_id = ? AND created_at >= (
+       SELECT datetime(created_at, '-5 minutes') FROM messages WHERE id = ?
+     ) AND created_at <= (
+       SELECT datetime(created_at, '+5 minutes') FROM messages WHERE id = ?
+     )
+     ORDER BY created_at ASC
+     LIMIT ?`,
+    conversationId, messageId, messageId, radius * 2 + 1,
+  );
+  return rows.map(mapRowToMessage);
+}
+
+/**
+ * Récupère les messages d'une conversation
+ */
+export async function getConversationExcerpt(
+  conversationId: string,
+  limit: number = 10,
+): Promise<Message[]> {
+  const db = await getDB();
+  const rows = await db.getAllAsync<any>(
+    `SELECT * FROM messages
+     WHERE conversation_id = ?
+     ORDER BY created_at ASC
+     LIMIT ?`,
+    conversationId, limit,
+  );
+  return rows.map(mapRowToMessage);
+}
+
+
+
+/**
  * Récupère les N derniers messages d'une conversation
  */
 export async function getRecentMessages(
@@ -1144,7 +1188,13 @@ function mapRowToTamadachi(row: any): Tamadachi {
       totalMemories: row.total_memories,
       totalXP: row.total_xp,
       currentStage: row.stage as EvolutionStage,
-      totalDays: Math.max(1, Math.floor((Date.now() - new Date(row.birth_date).getTime()) / (1000 * 60 * 60 * 24))),
+      totalDays: (() => {
+        const from = new Date(row.birth_date);
+        const to = new Date();
+        from.setHours(0, 0, 0, 0);
+        to.setHours(0, 0, 0, 0);
+        return Math.max(1, Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      })(),
       daysSinceBirth: Math.floor(
         (Date.now() - new Date(row.birth_date).getTime()) / (1000 * 60 * 60 * 24)
       ),

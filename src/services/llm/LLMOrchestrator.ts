@@ -129,6 +129,9 @@ export async function chat(
     attachments: m.attachments,
   }));
 
+  // Ajouter les attachments au dernier message user
+  const userAttachments = options?.attachments || [];
+
   const request: LLMRequest = {
     systemPrompt,
     messages,
@@ -136,6 +139,7 @@ export async function chat(
     temperature: options?.temperature ?? LLM_CONFIG.defaultParams.temperature,
     maxTokens: options?.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens,
     topP: LLM_CONFIG.defaultParams.topP,
+    userAttachments,
   };
 
   const providerOrder = buildProviderOrder(options?.provider, options?.skipFallback);

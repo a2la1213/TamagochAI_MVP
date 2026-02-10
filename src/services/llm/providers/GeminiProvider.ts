@@ -233,7 +233,7 @@ export class GeminiProvider implements LLMProviderInstance {
   private buildRequestBody(request: LLMRequest): any {
     // Séparer le system prompt des messages
     const systemContent = request.systemPrompt || '';
-    const chatMessages = [...request.messages, { role: 'user' as const, content: request.userMessage }];
+    const chatMessages = [...request.messages, { role: 'user' as const, content: request.userMessage, attachments: request.userAttachments }];
 
     // Convertir au format Gemini (avec support images)
     const contents = chatMessages.map(msg => {

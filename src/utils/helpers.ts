@@ -74,7 +74,12 @@ export function diffInSeconds(from: string, to: string): number {
  * Retourne le nombre de jours depuis une date ISO
  */
 export function daysSince(date: string): number {
-  return Math.floor(diffInDays(date, now()));
+  const from = new Date(date);
+  const to = new Date();
+  // Compter les jours calendaires (pas les périodes de 24h)
+  from.setHours(0, 0, 0, 0);
+  to.setHours(0, 0, 0, 0);
+  return Math.max(1, Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 }
 
 /**

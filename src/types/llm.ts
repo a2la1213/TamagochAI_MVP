@@ -96,6 +96,7 @@ export interface LLMRequest {
   maxTokens?: number;
   topP?: number;
   stopSequences?: string[];
+  userAttachments?: LLMContentPart[];
 }
 
 // ============================================================

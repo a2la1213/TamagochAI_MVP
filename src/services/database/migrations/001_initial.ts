@@ -338,7 +338,7 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Insérer les settings par défaut
 INSERT OR IGNORE INTO settings (key, value) VALUES ('xp_mode', 'prototype');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'light');
-INSERT OR IGNORE INTO settings (key, value) VALUES ('notifications_enabled', 'false');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('notifications_enabled', 'true');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('haptics_enabled', 'true');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('auto_save_enabled', 'true');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('debug_mode', 'false');

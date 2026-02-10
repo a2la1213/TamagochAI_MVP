@@ -3,6 +3,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Image, Alert } from 'react-native';
 import { THEME } from '../../constants/config';
@@ -47,6 +48,32 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
       console.warn('Image pick failed:', e);
     }
   }, []);
+
+  const takePhoto = useCallback(async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission requise', "L'accès à la caméra est nécessaire.");
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.7,
+        base64: true,
+        allowsEditing: false,
+      });
+      if (!result.canceled && result.assets[0]?.base64) {
+        const asset = result.assets[0];
+        setAttachments(prev => [...prev, {
+          type: 'image',
+          uri: asset.uri,
+          base64: asset.base64!,
+          mimeType: asset.mimeType || 'image/jpeg',
+        }]);
+      }
+    } catch (e) {
+      console.warn('Camera failed:', e);
+    }
+  }, []);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -80,7 +107,13 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
         </View>
       )}
       <View style={styles.container}>
-      <TouchableOpacity style={styles.attachButton} onPress={pickImage} disabled={isGenerating}>
+      <TouchableOpacity style={styles.attachButton} onPress={() => {
+        Alert.alert('Joindre', 'Que veux-tu envoyer ?', [
+          { text: '📷 Photo', onPress: takePhoto },
+          { text: '🖼️ Galerie', onPress: pickImage },
+          { text: 'Annuler', style: 'cancel' },
+        ]);
+      }} disabled={isGenerating}>
         <Text style={styles.attachButtonText}>📎</Text>
       </TouchableOpacity>
       <TextInput

@@ -201,7 +201,7 @@ export function ChatScreen() {
         )}
 
         <ChatInput
-          onSend={(msg) => { sendMessage(msg); setEditingMessage(null); }}
+          onSend={(msg, atts) => { sendMessage(msg, atts); setEditingMessage(null); }}
           isGenerating={isGenerating}
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}

@@ -438,8 +438,8 @@ export const METACOGNITION_CONFIG = {
   maxThoughts: 50,                  // Garde 50 pensées en mémoire
 
   // Notifications
-  notificationCheckMinutes: 30,     // Vérifie toutes les 30 min
-  minNotificationIntervalMs: 3600000, // 1h minimum entre notifications
+  notificationCheckMinutes: 15,     // Vérifie toutes les 15 min
+  minNotificationIntervalMs: 1800000, // 30 min minimum entre notifications
 
   // Rêves
   dreamEnabled: true,
