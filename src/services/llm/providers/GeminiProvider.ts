@@ -235,11 +235,31 @@ export class GeminiProvider implements LLMProviderInstance {
     const systemContent = request.systemPrompt || '';
     const chatMessages = [...request.messages, { role: 'user' as const, content: request.userMessage }];
 
-    // Convertir au format Gemini
-    const contents = chatMessages.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    }));
+    // Convertir au format Gemini (avec support images)
+    const contents = chatMessages.map(msg => {
+      const parts: any[] = [];
+      // Ajouter les images en premier
+      if (msg.attachments && msg.attachments.length > 0) {
+        for (const att of msg.attachments) {
+          if (att.type === 'image' && att.imageBase64) {
+            parts.push({
+              inlineData: {
+                mimeType: att.mimeType || 'image/jpeg',
+                data: att.imageBase64,
+              },
+            });
+          }
+        }
+      }
+      // Puis le texte
+      if (msg.content) {
+        parts.push({ text: msg.content });
+      }
+      return {
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts,
+      };
+    });
 
     const body: any = {
       contents,

@@ -50,6 +50,7 @@ import {
   getRecentMessages,
   countMessages,
   getLastMessage,
+  getAllRecentMessages,
   incrementTamadachiStat,
   updateTamadachi,
   upsertDailyStats,
@@ -492,6 +493,14 @@ export async function endCurrentConversation(reason: string = 'user_ended'): Pro
 export async function getActiveMessages(limit?: number): Promise<Message[]> {
   if (!activeConversationId) return [];
   return getRecentMessages(activeConversationId, limit || 50);
+}
+
+/**
+ * Charge TOUS les messages récents (toutes conversations confondues)
+ * Permet de voir l'historique complet comme un fil continu
+ */
+export async function getAllMessages(tamadachiId: string, limit?: number): Promise<Message[]> {
+  return getAllRecentMessages(tamadachiId, limit || 200);
 }
 
 /**

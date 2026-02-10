@@ -483,7 +483,7 @@ export function getRecentThoughts(maxCount: number = 10): InternalThought[] {
  * Formate les pensées pour injection dans le prompt LLM
  */
 export function getThoughtsForPrompt(): string {
-  const influential = getInfluencingThoughts(5);
+  const influential = getInfluencingThoughts(8);
   if (influential.length === 0) return '';
 
   const formatted = influential

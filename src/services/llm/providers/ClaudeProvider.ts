@@ -205,6 +205,28 @@ export class ClaudeProvider implements LLMProviderInstance {
   // FORMAT ANTHROPIC (Messages API)
   // ============================================================
 
+  private formatMessageContent(msg: LLMMessage): any {
+    if (!msg.attachments || msg.attachments.length === 0) {
+      return msg.content;
+    }
+    // Multimodal: array of content blocks
+    const blocks: any[] = [];
+    for (const att of msg.attachments) {
+      if (att.type === 'image' && att.imageBase64) {
+        blocks.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: att.mimeType || 'image/jpeg',
+            data: att.imageBase64,
+          },
+        });
+      }
+    }
+    blocks.push({ type: 'text', text: msg.content });
+    return blocks;
+  }
+
   private buildRequestBody(request: LLMRequest): any {
     const systemContent = request.systemPrompt || '';
     const chatMessages = [...request.messages, { role: 'user' as const, content: request.userMessage }];

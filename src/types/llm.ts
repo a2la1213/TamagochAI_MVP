@@ -30,9 +30,17 @@ export interface LLMProviderInstance {
 // ============================================================
 // MESSAGE
 // ============================================================
+export interface LLMContentPart {
+  type: 'text' | 'image';
+  text?: string;
+  imageBase64?: string;
+  mimeType?: string;
+}
+
 export interface LLMMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  attachments?: LLMContentPart[];
 }
 
 // ============================================================

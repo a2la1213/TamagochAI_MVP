@@ -48,6 +48,7 @@ import {
   processUserMessage,
   processAssistantResponse,
   getActiveMessages,
+  getAllMessages,
   getFormattedChatHistory,
   endCurrentConversation,
   getSessionInfo,
@@ -179,7 +180,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       }
 
       await initAllServices(tama);
-      const messages = await getActiveMessages();
+      const messages = await getAllMessages(tama.id, 200);
 
       set({
         tamadachi: tama,
@@ -216,7 +217,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       if (!tama) throw new Error('Failed to retrieve created TamadachAI');
 
       await initAllServices(tama);
-      const messages = await getActiveMessages();
+      const messages = await getAllMessages(tama.id, 200);
 
       set({
         tamadachi: tama,
@@ -386,7 +387,8 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
   },
 
   refreshMessages: async () => {
-    const messages = await getActiveMessages();
+    const tama = get().tamadachi;
+    const messages = tama ? await getAllMessages(tama.id, 200) : await getActiveMessages();
     set({ messages });
   },
 

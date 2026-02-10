@@ -177,7 +177,7 @@ export const CONVERSATION_CONFIG = {
   // Contexte envoyé au LLM
   context: {
     maxRecentMessages: 20,    // Derniers messages en contexte
-    maxRelevantMemories: 10,  // Souvenirs pertinents injectés
+    maxRelevantMemories: 25,  // Souvenirs pertinents injectés
     maxMemoryLength: 200,     // Longueur max d'un souvenir dans le prompt
   },
 

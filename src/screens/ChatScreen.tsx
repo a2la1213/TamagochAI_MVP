@@ -38,6 +38,7 @@ export function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   const [activeScreen, setActiveScreen] = useState<Screen>('chat');
+  const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
   const [evolutionStage, setEvolutionStage] = useState<EvolutionStage>(stage);
   const [previousStage, setPreviousStage] = useState<EvolutionStage | undefined>();
@@ -92,7 +93,7 @@ export function ChatScreen() {
   }
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <ChatBubble message={item} isStreaming={item.id === 'streaming'} />
+    <ChatBubble message={item} onEdit={(msg) => setEditingMessage({ id: msg.id, content: msg.content })} isStreaming={item.id === 'streaming'} />
   );
 
   const handleDreamTap = () => {
@@ -171,8 +172,10 @@ export function ChatScreen() {
         )}
 
         <ChatInput
-          onSend={sendMessage}
+          onSend={(msg) => { sendMessage(msg); setEditingMessage(null); }}
           isGenerating={isGenerating}
+          editingMessage={editingMessage}
+          onCancelEdit={() => setEditingMessage(null)}
           placeholder={`Parle à ${name}...`}
         />
       </KeyboardAvoidingView>

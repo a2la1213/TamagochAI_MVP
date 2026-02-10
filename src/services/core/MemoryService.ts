@@ -293,49 +293,82 @@ export async function processMessageForMemories(
 export async function findRelevantMemories(
   tamadachiId: string,
   message: string,
-  limit: number = 10,
+  limit: number = 25,
 ): Promise<Memory[]> {
   const keywords = extractKeywords(message);
   const results: Memory[] = [];
   const seenIds = new Set<string>();
 
-  // 1. Recherche FTS si on a des mots-clés
-  if (keywords.length > 0) {
-    const searchQuery = keywords.join(' OR ');
-    try {
-      const ftsResults = await searchMemories(tamadachiId, searchQuery, Math.ceil(limit / 2));
-      for (const mem of ftsResults) {
-        if (!seenIds.has(mem.id)) {
-          results.push(mem);
-          seenIds.add(mem.id);
-        }
-      }
-    } catch (error) {
-      log.debug('FTS search failed, falling back to top memories');
-    }
-  }
-
-  // 2. Compléter avec les top memories (les plus importants)
-  const remaining = limit - results.length;
-  if (remaining > 0) {
-    const topMemories = await getTopMemories(tamadachiId, remaining + 5);
-    for (const mem of topMemories) {
+  const addUnique = (memories: Memory[]) => {
+    for (const mem of memories) {
       if (!seenIds.has(mem.id) && results.length < limit) {
         results.push(mem);
         seenIds.add(mem.id);
       }
     }
+  };
+
+  // 1. COUCHE RÉCENTE — Les 8 derniers souvenirs (mémoire courte)
+  try {
+    const recentMemories = await queryMemories(tamadachiId, {
+      orderBy: 'recent',
+      limit: 8,
+    });
+    addUnique(recentMemories);
+    log.debug(`Memory layer 1 (recent): ${recentMemories.length} found`);
+  } catch (e) {
+    log.debug('Recent memories query failed');
+  }
+
+  // 2. COUCHE FTS — Recherche par mots-clés du message
+  if (keywords.length > 0) {
+    // Essayer chaque mot-clé individuellement si le OR échoue
+    const searchQuery = keywords.join(' OR ');
+    try {
+      const ftsResults = await searchMemories(tamadachiId, searchQuery, Math.ceil(limit / 3));
+      addUnique(ftsResults);
+      log.debug(`Memory layer 2 (FTS): ${ftsResults.length} found for "${searchQuery}"`);
+    } catch (error) {
+      // Essayer mot par mot en fallback
+      for (const kw of keywords.slice(0, 5)) {
+        try {
+          const kwResults = await searchMemories(tamadachiId, kw, 3);
+          addUnique(kwResults);
+        } catch (e) { /* ignore individual failures */ }
+      }
+      log.debug('FTS OR failed, tried individual keywords');
+    }
+  }
+
+  // 3. COUCHE FLASH — Les flash memories (moments forts)
+  try {
+    const flashMemories = await queryMemories(tamadachiId, {
+      type: 'flash',
+      orderBy: 'importance',
+      limit: 5,
+    });
+    addUnique(flashMemories);
+    log.debug(`Memory layer 3 (flash): ${flashMemories.length} found`);
+  } catch (e) {
+    log.debug('Flash memories query failed');
+  }
+
+  // 4. COUCHE IMPORTANCE — Les souvenirs les plus importants (tous types)
+  const remaining = limit - results.length;
+  if (remaining > 0) {
+    const topMemories = await getTopMemories(tamadachiId, remaining + 5);
+    addUnique(topMemories);
+    log.debug(`Memory layer 4 (top): ${topMemories.length} found`);
   }
 
   // Mettre à jour les access counts
   for (const mem of results) {
     try {
       await updateMemory(mem.id, {});
-    } catch (e) {
-      // Pas critique
-    }
+    } catch (e) { /* Pas critique */ }
   }
 
+  log.info(`Memory retrieval: ${results.length} total (${seenIds.size} unique) for message "${message.slice(0, 50)}..."`);
   return results;
 }
 
@@ -385,42 +418,47 @@ export async function getFlashMemories(tamadachiId: string): Promise<Memory[]> {
  */
 export function formatMemoriesForPrompt(memories: Memory[]): string {
   if (memories.length === 0) {
-    return 'Aucun souvenir pertinent pour cette conversation.';
+    return "Tu n'as pas encore de souvenirs. Chaque conversation en cr\u00e9era !";
   }
 
   const lines: string[] = [];
+  lines.push(`Tu as ${memories.length} souvenirs actifs. UTILISE-LES naturellement !`);
+  lines.push("Fais r\u00e9f\u00e9rence \u00e0 ces souvenirs comme un ami qui se souvient de vos conversations.");
+  lines.push('');
 
-  // Regrouper par type pour plus de clarté
   const facts = memories.filter(m => m.type === 'fact' || m.type === 'relationship');
   const preferences = memories.filter(m => m.type === 'preference');
   const emotions = memories.filter(m => m.type === 'emotion' || m.type === 'flash');
   const topics = memories.filter(m => m.type === 'topic' || m.type === 'event');
 
   if (facts.length > 0) {
-    lines.push('Ce que tu sais sur ton humain :');
+    lines.push('\ud83d\udccc CE QUE TU SAIS SUR TON HUMAIN :');
     for (const mem of facts) {
-      const flash = mem.isFlash ? ' ⚡' : '';
+      const flash = mem.isFlash ? ' \u26a1IMPORTANT' : '';
       lines.push(`  - ${mem.content}${flash}`);
     }
   }
 
   if (preferences.length > 0) {
-    lines.push('Ses préférences :');
+    lines.push('');
+    lines.push('\u2764\ufe0f SES GO\u00dbTS ET PR\u00c9F\u00c9RENCES :');
     for (const mem of preferences) {
       lines.push(`  - ${mem.content}`);
     }
   }
 
   if (emotions.length > 0) {
-    lines.push('Moments émotionnels partagés :');
+    lines.push('');
+    lines.push('\ud83d\udcab MOMENTS \u00c9MOTIONNELS MARQUANTS :');
     for (const mem of emotions) {
-      const flash = mem.isFlash ? ' ⚡' : '';
+      const flash = mem.isFlash ? ' \u26a1' : '';
       lines.push(`  - ${mem.content}${flash}`);
     }
   }
 
   if (topics.length > 0) {
-    lines.push('Sujets déjà discutés ensemble :');
+    lines.push('');
+    lines.push('\ud83d\udcac SUJETS DONT VOUS AVEZ PARL\u00c9 :');
     for (const mem of topics) {
       lines.push(`  - ${mem.content}`);
     }
@@ -572,16 +610,18 @@ export function getMemoryServiceInfo(): string {
 /**
  * Retourne les N souvenirs les plus importants
  */
-export async function getTopMemories(tamadachiId: string, count: number = 5): Promise<Memory[]> {
+export async function getTopMemories(tamadachiId: string, count: number = 10): Promise<Memory[]> {
   try {
-    const allMemories = await getMemoriesByType(tamadachiId, 'fact');
-    const flashMemories = await getFlashMemories(tamadachiId);
-    const combined = [...flashMemories, ...allMemories];
-
-    // Trier par importance (score) décroissant
-    combined.sort((a, b) => (b.importance || 0) - (a.importance || 0));
-
-    return combined.slice(0, count);
+    const allMemories = await queryMemories(tamadachiId, {
+      orderBy: 'importance',
+      limit: count * 3,
+    });
+    // Fallback: aussi chercher les facts si la query générale échoue
+    const factMemories = await getMemoriesByType(tamadachiId, 'fact');
+    const combined = [...allMemories, ...factMemories];
+    const seen = new Set<string>();
+    const unique = combined.filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
+    return unique.sort((a, b) => b.importance - a.importance).slice(0, count);
   } catch (error) {
     return [];
   }

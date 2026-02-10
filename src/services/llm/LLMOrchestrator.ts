@@ -111,13 +111,14 @@ export async function initLLM(): Promise<void> {
  */
 export async function chat(
   systemPrompt: string,
-  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  chatHistory: Array<{ role: 'user' | 'assistant'; content: string; attachments?: any[] }>,
   userMessage: string,
   options?: {
     temperature?: number;
     maxTokens?: number;
     provider?: LLMProviderName;
     skipFallback?: boolean;
+    attachments?: any[];
   },
 ): Promise<LLMResponse> {
   ensureInitialized();
@@ -125,6 +126,7 @@ export async function chat(
   const messages: LLMMessage[] = chatHistory.map(m => ({
     role: m.role as 'user' | 'assistant' | 'system',
     content: m.content,
+    attachments: m.attachments,
   }));
 
   const request: LLMRequest = {

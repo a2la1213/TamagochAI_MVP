@@ -2,7 +2,8 @@
 // Bulle de message — affiche un message user ou assistant
 
 import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Message } from '../../types';
 import { THEME } from '../../constants/config';
 
@@ -16,21 +17,38 @@ const EMOTION_FR: Record<string, string> = {
 interface ChatBubbleProps {
   message: Message;
   isStreaming?: boolean;
+  onEdit?: (message: Message) => void;
 }
 
-function ChatBubbleInner({ message, isStreaming }: ChatBubbleProps) {
+function ChatBubbleInner({ message, isStreaming, onEdit }: ChatBubbleProps) {
   const isUser = message.role === 'user';
 
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
-      <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onLongPress={() => {
+          Clipboard.setStringAsync(message.content);
+          Alert.alert('Copié !', 'Le message a été copié dans le presse-papier.', [{ text: 'OK' }], { cancelable: true });
+        }}
+        delayLongPress={400}
+        style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}
+      >
+        {message.attachments && message.attachments.map((att, i) => (
+          att.type === 'image' && <Image key={i} source={{ uri: att.uri }} style={styles.attachedImage} resizeMode="cover" />
+        ))}
         <Text selectable style={[styles.text, isUser ? styles.userText : styles.assistantText]}>
           {message.content}
           {isStreaming && <Text style={styles.cursor}>▌</Text>}
         </Text>
-      </View>
+      </TouchableOpacity>
       {message.emotionAtTime && !isUser && (
         <Text style={styles.emotionTag}>{EMOTION_FR[message.emotionAtTime || ''] || message.emotionAtTime}</Text>
+      )}
+      {isUser && onEdit && (
+        <TouchableOpacity onPress={() => onEdit(message)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={styles.editButton}>✏️ Modifier</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -64,12 +82,12 @@ const styles = StyleSheet.create({
   userBubble: {
     backgroundColor: THEME.colors.primary,
     borderBottomRightRadius: 4,
-    maxWidth: '88%',
+    maxWidth: '92%',
   },
   assistantBubble: {
     backgroundColor: THEME.colors.surface,
     borderBottomLeftRadius: 4,
-    maxWidth: '95%',
+    maxWidth: '98%',
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },
@@ -92,5 +110,17 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     marginTop: 2,
     marginLeft: 8,
+  },
+  attachedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 6,
+  },
+  editButton: {
+    fontSize: 11,
+    color: THEME.colors.textSecondary,
+    marginTop: 3,
+    alignSelf: 'flex-end',
   },
 });

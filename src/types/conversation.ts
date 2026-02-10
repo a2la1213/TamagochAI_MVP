@@ -27,6 +27,9 @@ export interface Message {
   emotionAtTime?: EmotionType;
   hormoneSnapshot?: HormoneLevels;
   
+  // Attachments
+  attachments?: Array<{ type: 'image' | 'document'; uri: string; mimeType: string; name?: string }>;
+
   // Flags
   isEdited: boolean;
   isRegenerated: boolean;

@@ -441,6 +441,25 @@ export async function getMessages(
 }
 
 /**
+ * Récupère tous les messages récents du TamadachAI (toutes conversations)
+ */
+export async function getAllRecentMessages(
+  tamadachiId: string,
+  limit: number = 200,
+): Promise<Message[]> {
+  const db = await getDB();
+  const rows = await db.getAllAsync<any>(
+    `SELECT m.* FROM messages m
+     JOIN conversations c ON m.conversation_id = c.id
+     WHERE c.tamadachi_id = ?
+     ORDER BY m.created_at DESC
+     LIMIT ?`,
+    tamadachiId, limit,
+  );
+  return rows.map(mapRowToMessage).reverse();
+}
+
+/**
  * Récupère les N derniers messages d'une conversation
  */
 export async function getRecentMessages(

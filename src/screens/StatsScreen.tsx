@@ -368,6 +368,7 @@ const styles = StyleSheet.create({
   dreamCard: {
     backgroundColor: THEME.colors.surface, borderRadius: 10, padding: 12,
     marginBottom: 8, borderWidth: 1, borderColor: THEME.colors.border,
+    overflow: 'visible',
   },
   dreamHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   dreamTitle: { fontSize: 15, fontWeight: '600', color: THEME.colors.text },
