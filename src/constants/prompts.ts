@@ -97,6 +97,7 @@ export const PROMPT_STATE = `ÉTAT ACTUEL:
 - Humeur générale: {mood_description}
 - État hormonal: {hormonal_state}
 - Énergie vitale (batterie): {battery_level}
+- Localisation de ton humain: {user_location}
 - Moment de la journée: {time_of_day}
 
 Ton état émotionnel DOIT transparaître naturellement dans tes réponses.
@@ -403,6 +404,7 @@ export interface PromptVariables {
   current_streak: number;
   longest_streak: number;
   memory_digest: string;
+  user_location: string;
 }
 
 /**

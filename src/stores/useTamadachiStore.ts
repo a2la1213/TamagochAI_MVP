@@ -37,6 +37,7 @@ import {
   getCurrentEmotion,
   updateEmotion,
   getEmotionalSummary,
+  vibrateForEmotion,
 } from '../services/core/EmotionService';
 import {
   initEvolution,
@@ -92,6 +93,7 @@ import {
   getBatteryLevel,
   isCharging as isBatteryCharging,
 } from '../services/sensors/BatteryService';
+import { getApproxLocation } from '../services/sensors/LocationService';
 
 import { createLogger } from '../utils/helpers';
 
@@ -192,6 +194,9 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         batteryCharging: isBatteryCharging(),
         isInitialized: true,
       });
+
+      // Récupérer la localisation
+      getApproxLocation().catch(() => {});
 
       // Rafraîchir la batterie toutes les 30s
       setInterval(() => {
@@ -348,6 +353,11 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       const updatedTama = await getTamadachi();
       const finalMessages = tamadachi ? await getAllMessages(tamadachi.id, 200) : await getActiveMessages();
       const newEmotion = updateEmotion();
+      
+      // Vibration émotionnelle
+      if (newEmotion?.primary) {
+        vibrateForEmotion(newEmotion.primary);
+      }
 
       set({
         tamadachi: updatedTama,

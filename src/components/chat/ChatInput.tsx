@@ -49,6 +49,50 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
     }
   }, []);
 
+  const pickDocument = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const ext = asset.name.split('.').pop()?.toLowerCase() || '';
+        const textExts = ['txt', 'md', 'py', 'js', 'ts', 'jsx', 'tsx', 'json', 'csv', 'html', 'css', 'xml', 'yaml', 'yml', 'sh', 'bash', 'sql', 'java', 'c', 'cpp', 'h', 'rb', 'php', 'swift', 'kt', 'rs', 'go', 'r', 'log', 'env', 'ini', 'toml'];
+        const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+
+        if (imageExts.includes(ext)) {
+          // Traiter comme image
+          const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+          setAttachments(prev => [...prev, {
+            type: 'image',
+            uri: asset.uri,
+            base64,
+            mimeType: asset.mimeType || 'image/jpeg',
+          }]);
+        } else if (textExts.includes(ext) || asset.mimeType?.startsWith('text/')) {
+          // Lire le contenu texte du fichier
+          const content = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.UTF8 });
+          const filePreview = '📄 ' + asset.name;
+          const fileContent = '--- Contenu du fichier "' + asset.name + '" ---\n' + content.slice(0, 5000) + (content.length > 5000 ? '\n[... tronqué, ' + content.length + ' caractères au total]' : '') + '\n--- Fin du fichier ---';
+          setAttachments(prev => [...prev, {
+            type: 'file' as any,
+            uri: asset.uri,
+            base64: '',
+            mimeType: asset.mimeType || 'text/plain',
+            fileName: asset.name,
+            textContent: fileContent,
+          }]);
+        } else {
+          // Fichier binaire non supporté — informer
+          Alert.alert('Type de fichier', 'Je peux lire les fichiers texte (code, .md, .txt, .json...) et les images. Ce format (' + ext + ') n\'est pas encore supporté.');
+        }
+      }
+    } catch (e) {
+      console.warn('Document picker failed:', e);
+    }
+  }, []);
+
   const takePhoto = useCallback(async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -84,8 +128,14 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
   }, [editingMessage]);
 
   const handleSend = useCallback(() => {
-    const trimmed = text.trim();
+    let trimmed = text.trim();
     if (!trimmed && attachments.length === 0) return;
+    
+    // Injecter le contenu des fichiers texte dans le message
+    const fileAtts = attachments.filter((a: any) => a.textContent);
+    for (const fa of fileAtts) {
+      trimmed += '\n' + (fa as any).textContent;
+    }
     if (isGenerating) return;
     onSend(trimmed || '(image)', attachments.length > 0 ? attachments : undefined);
     setText('');
@@ -111,6 +161,7 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
         Alert.alert('Joindre', 'Que veux-tu envoyer ?', [
           { text: '📷 Photo', onPress: takePhoto },
           { text: '🖼️ Galerie', onPress: pickImage },
+          { text: '📄 Fichier', onPress: pickDocument },
           { text: 'Annuler', style: 'cancel' },
         ]);
       }} disabled={isGenerating}>

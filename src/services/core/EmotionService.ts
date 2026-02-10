@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 // src/services/core/EmotionService.ts
 // Service émotionnel du TamadachAI — MVP COMPLET
 //
@@ -420,4 +421,50 @@ export function resetEmotions(): void {
   previousState = null;
   emotionHistory = [];
   log.info('Emotions reset');
+}
+
+
+// ============================================================
+// VIBRATIONS ÉMOTIONNELLES
+// ============================================================
+
+/**
+ * Vibre selon l'émotion actuelle
+ */
+export function vibrateForEmotion(emotion: string): void {
+  try {
+    switch (emotion) {
+      case 'joy':
+      case 'excitement':
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        break;
+      case 'sadness':
+      case 'loneliness':
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        break;
+      case 'curiosity':
+      case 'surprise':
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        break;
+      case 'anger':
+      case 'frustration':
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        break;
+      case 'fear':
+      case 'anxiety':
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 200);
+        break;
+      case 'love':
+      case 'gratitude':
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 150);
+        setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 300);
+        break;
+      default:
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  } catch (e) {
+    // Haptics not available
+  }
 }
