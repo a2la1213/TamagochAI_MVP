@@ -234,7 +234,7 @@ export class ClaudeProvider implements LLMProviderInstance {
     // Claude attend un format spécifique : system séparé, messages alternés user/assistant
     const messages = chatMessages.map((msg: any) => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content,
+      content: this.formatMessageContent(msg),
     }));
 
     const body: any = {

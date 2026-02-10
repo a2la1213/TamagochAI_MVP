@@ -32,7 +32,7 @@ export default function App() {
     return (
       <SafeAreaProvider>
         <StatusBar style="light" />
-        <LoadingScreen message="Réveil en cours..." />
+        <LoadingScreen message="Réveil..." />
       </SafeAreaProvider>
     );
   }

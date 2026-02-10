@@ -230,6 +230,7 @@ export async function storeMemory(
   memory: ExtractedMemory,
   sourceConversationId?: string,
   sourceMessageId?: string,
+  originalMessage?: string,
 ): Promise<string | null> {
   try {
     // Anti-doublon
@@ -240,6 +241,7 @@ export async function storeMemory(
     }
 
     const id = await createMemory(tamadachiId, memory.type, memory.content, {
+      context: originalMessage ? originalMessage.slice(0, 500) : undefined,
       importance: memory.importance,
       emotionalWeight: memory.emotionalWeight,
       isFlash: memory.type === 'flash',
@@ -274,9 +276,26 @@ export async function processMessageForMemories(
   const created: string[] = [];
 
   for (const memory of extracted) {
-    const id = await storeMemory(tamadachiId, memory, conversationId, messageId);
+    const id = await storeMemory(tamadachiId, memory, conversationId, messageId, message);
     if (id) {
       created.push(memory.content);
+    }
+  }
+
+  // Stocker aussi le message brut comme souvenir "topic" si assez long
+  // Cela permet au TamadachAI de retrouver le contenu exact plus tard
+  if (role === 'user' && message.length > 100) {
+    const topicContent = 'Message complet de l\'humain: "' + message.slice(0, 400) + '"';
+    const topicExists = await memoryExists(tamadachiId, topicContent.slice(0, 100));
+    if (!topicExists) {
+      await createMemory(tamadachiId, 'topic', topicContent, {
+        context: message.slice(0, 500),
+        importance: 5,
+        emotionalWeight: hormones?.oxytocin ? Math.min(hormones.oxytocin, 80) : 20,
+        sourceConversationId: conversationId,
+        sourceMessageId: messageId,
+      });
+      created.push(topicContent.slice(0, 50));
     }
   }
 
@@ -522,7 +541,8 @@ export async function getMemoryDigest(tamadachiId: string): Promise<string> {
       const date = new Date(m.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
       const flash = m.isFlash ? ' ⚡' : '';
       const emotion = m.emotionalWeight > 50 ? ' (chargé émotionnellement)' : '';
-      return '[' + date + '] ' + m.content + flash + emotion;
+      const ctx = m.context ? ' → Message original: "' + m.context.slice(0, 200) + '"' : '';
+      return '[' + date + '] ' + m.content + flash + emotion + ctx;
     };
 
     if (allFacts.length > 0) {
