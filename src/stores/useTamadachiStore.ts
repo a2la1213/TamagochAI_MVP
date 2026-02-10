@@ -289,12 +289,17 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       let fullResponse = '';
       set({ streamingText: '...' });
 
-      const response = await chat(
+      // Safety timeout pour éviter le blocage infini
+      const chatPromise = chat(
         enrichedPrompt,
         chatHistory.slice(0, -1),
         content,
         { temperature, maxTokens },
       );
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout: pas de réponse après 60s')), 65000)
+      );
+      const response = await Promise.race([chatPromise, timeoutPromise]);
 
       if (response.success) {
         fullResponse = response.content;
@@ -321,7 +326,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
       // 9. Refresh complet
       const updatedTama = await getTamadachi();
-      const finalMessages = await getActiveMessages();
+      const finalMessages = tamadachi ? await getAllMessages(tamadachi.id, 200) : await getActiveMessages();
       const newEmotion = updateEmotion();
 
       set({

@@ -221,14 +221,19 @@ export async function processUserMessage(
   await incrementTamadachiStat(tamadachiId, 'total_messages');
 
   // ---- ÉTAPE 2 : Extraire les souvenirs ----
-  const memoryResult = await processMessageForMemories(
-    tamadachiId,
-    content,
-    'user',
-    conversationId,
-    messageId,
-    hormones,
-  );
+  let memoryResult: any = { memoriesCreated: 0, flashMemoryCreated: false, memories: [] };
+  try {
+    memoryResult = await processMessageForMemories(
+      tamadachiId,
+      content,
+      'user',
+      conversationId,
+      messageId,
+      hormones,
+    );
+  } catch (memError) {
+    log.warn('Memory extraction failed, continuing:', memError);
+  }
   if (memoryResult.memoriesCreated > 0) {
     await incrementConversationStat(conversationId, 'memories_created', memoryResult.memoriesCreated);
     // XP bonus pour création de souvenirs
@@ -427,14 +432,24 @@ async function buildSystemPrompt(
   const stageConfig = EVOLUTION_STAGES[tama.stage];
 
   // Récupérer les souvenirs formatés
-  const memoriesText = await getFormattedRelevantMemories(
-    tamadachiId,
-    currentMessage,
-    CONVERSATION_CONFIG.context.maxRelevantMemories,
-  );
+  let memoriesText = 'Pas de souvenirs disponibles.';
+  try {
+    memoriesText = await getFormattedRelevantMemories(
+      tamadachiId,
+      currentMessage,
+      CONVERSATION_CONFIG.context.maxRelevantMemories,
+    );
+  } catch (memError) {
+    log.warn('Memory retrieval in prompt failed:', memError);
+  }
 
   // Infos utilisateur
-  const userFacts = await getUserFacts(tamadachiId);
+  let userFacts: any[] = [];
+  try {
+    userFacts = await getUserFacts(tamadachiId);
+  } catch (e) {
+    log.warn('getUserFacts failed:', e);
+  }
   const userName = userFacts.find(m => m.content.includes("s'appelle"))?.content.split("s'appelle ")[1] || 'inconnu';
   const userInterests = userFacts
     .filter(m => m.type === 'preference')

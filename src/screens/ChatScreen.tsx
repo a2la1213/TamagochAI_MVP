@@ -36,6 +36,8 @@ export function ChatScreen() {
   const { emoji: emotionEmoji } = useEmotion();
   const { percent: batteryPercent, isCharging } = useBattery();
   const flatListRef = useRef<FlatList>(null);
+  const isNearBottom = useRef(true);
+  const prevMessageCount = useRef(0);
 
   const [activeScreen, setActiveScreen] = useState<Screen>('chat');
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
@@ -63,7 +65,7 @@ export function ChatScreen() {
   useEffect(() => {
     if (messages.length > 0 || streamingText) {
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        if (isNearBottom.current) flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
   }, [messages.length, streamingText]);
@@ -153,10 +155,21 @@ export function ChatScreen() {
             renderItem={renderMessage}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.messageList}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
             onContentSizeChange={() => {
-              flatListRef.current?.scrollToEnd({ animated: false });
+              // Ne scroller vers le bas que si l'utilisateur est proche du bas
+              // ou si un nouveau message vient d'être ajouté
+              if (isNearBottom.current || displayMessages.length !== prevMessageCount.current) {
+                flatListRef.current?.scrollToEnd({ animated: displayMessages.length !== prevMessageCount.current });
+                prevMessageCount.current = displayMessages.length;
+              }
             }}
+            onScroll={(e) => {
+              const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+              const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+              isNearBottom.current = distanceFromBottom < 150;
+            }}
+            scrollEventThrottle={100}
           />
         )}
 

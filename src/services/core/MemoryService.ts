@@ -473,10 +473,23 @@ export function formatMemoriesForPrompt(memories: Memory[]): string {
 export async function getFormattedRelevantMemories(
   tamadachiId: string,
   message: string,
-  limit: number = 10,
+  limit: number = 25,
 ): Promise<string> {
-  const memories = await findRelevantMemories(tamadachiId, message, limit);
-  return formatMemoriesForPrompt(memories);
+  try {
+    // Safety timeout: si la recherche de souvenirs prend plus de 5s, on continue sans
+    const memoriesPromise = findRelevantMemories(tamadachiId, message, limit);
+    const timeoutPromise = new Promise<Memory[]>((resolve) =>
+      setTimeout(() => {
+        log.warn('Memory retrieval timeout (5s) — continuing without memories');
+        resolve([]);
+      }, 5000)
+    );
+    const memories = await Promise.race([memoriesPromise, timeoutPromise]);
+    return formatMemoriesForPrompt(memories);
+  } catch (error) {
+    log.error('Memory retrieval failed:', error);
+    return 'Souvenirs temporairement indisponibles.';
+  }
 }
 
 // ============================================================

@@ -368,12 +368,12 @@ const styles = StyleSheet.create({
   dreamCard: {
     backgroundColor: THEME.colors.surface, borderRadius: 10, padding: 12,
     marginBottom: 8, borderWidth: 1, borderColor: THEME.colors.border,
-    overflow: 'visible',
+    flexShrink: 0,
   },
   dreamHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   dreamTitle: { fontSize: 15, fontWeight: '600', color: THEME.colors.text },
   dreamShared: { fontSize: 11, color: THEME.colors.success },
-  dreamNarrative: { fontSize: 13, color: THEME.colors.textSecondary, lineHeight: 20, fontStyle: 'italic' },
+  dreamNarrative: { fontSize: 13, color: THEME.colors.textSecondary, lineHeight: 20, fontStyle: 'italic', flexShrink: 0 },
   dreamDate: { fontSize: 11, color: THEME.colors.textSecondary, marginTop: 6, opacity: 0.6 },
 
   // Thoughts

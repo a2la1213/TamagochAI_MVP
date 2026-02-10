@@ -82,12 +82,10 @@ const styles = StyleSheet.create({
   userBubble: {
     backgroundColor: THEME.colors.primary,
     borderBottomRightRadius: 4,
-    maxWidth: '92%',
   },
   assistantBubble: {
     backgroundColor: THEME.colors.surface,
     borderBottomLeftRadius: 4,
-    maxWidth: '98%',
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },
