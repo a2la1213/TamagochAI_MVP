@@ -127,6 +127,10 @@ export const PROMPT_USER_CONTEXT = `CONTEXTE UTILISATEUR:
 - Intérêts connus: {user_interests}
 - Jours ensemble: {days_since_birth}
 - Conversations partagées: {conversation_count}
+- Messages échangés au total: {total_messages}
+- Souvenirs créés ensemble: {total_memories}
+- Streak actuel: {current_streak} jours consécutifs
+- Meilleur streak: {longest_streak} jours
 
 Si tu connais le nom de ton humain, utilise-le naturellement (pas à chaque phrase).
 Réfère-toi à ses intérêts quand c'est pertinent.`;
@@ -390,6 +394,10 @@ export interface PromptVariables {
   time_of_day: string;
   days_since_birth: number;
   conversation_count: number;
+  total_messages: number;
+  total_memories: number;
+  current_streak: number;
+  longest_streak: number;
 }
 
 /**

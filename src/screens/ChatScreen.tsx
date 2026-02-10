@@ -149,28 +149,44 @@ export function ChatScreen() {
         {isEmpty ? (
           <EmptyState onSuggestionTap={sendMessage} />
         ) : (
-          <FlatList
-            ref={flatListRef}
-            data={displayMessages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.messageList}
-            showsVerticalScrollIndicator={true}
-            onContentSizeChange={() => {
-              // Ne scroller vers le bas que si l'utilisateur est proche du bas
-              // ou si un nouveau message vient d'être ajouté
-              if (isNearBottom.current || displayMessages.length !== prevMessageCount.current) {
-                flatListRef.current?.scrollToEnd({ animated: displayMessages.length !== prevMessageCount.current });
-                prevMessageCount.current = displayMessages.length;
-              }
-            }}
-            onScroll={(e) => {
-              const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-              const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
-              isNearBottom.current = distanceFromBottom < 150;
-            }}
-            scrollEventThrottle={100}
-          />
+          <View style={{ flex: 1 }}>
+            <FlatList
+              ref={flatListRef}
+              data={displayMessages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.messageList}
+              showsVerticalScrollIndicator={true}
+              onContentSizeChange={() => {
+                if (isNearBottom.current || displayMessages.length !== prevMessageCount.current) {
+                  flatListRef.current?.scrollToEnd({ animated: displayMessages.length !== prevMessageCount.current });
+                  prevMessageCount.current = displayMessages.length;
+                }
+              }}
+              onScroll={(e) => {
+                const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+                const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+                isNearBottom.current = distanceFromBottom < 150;
+              }}
+              scrollEventThrottle={100}
+            />
+            {displayMessages.length > 5 && (
+              <View style={styles.scrollButtons}>
+                <TouchableOpacity
+                  style={styles.scrollBtn}
+                  onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
+                >
+                  <Text style={styles.scrollBtnText}>↑</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.scrollBtn}
+                  onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                >
+                  <Text style={styles.scrollBtnText}>↓</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         )}
 
         {/* Typing indicator */}
@@ -238,6 +254,32 @@ const styles = StyleSheet.create({
     color: THEME.colors.text,
   },
   chatContainer: { flex: 1 },
+  scrollButtons: {
+    position: 'absolute',
+    right: 8,
+    bottom: 80,
+    gap: 6,
+  },
+  scrollBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  scrollBtnText: {
+    fontSize: 18,
+    color: THEME.colors.text,
+    fontWeight: 'bold',
+  },
   messageList: {
     paddingVertical: 12,
     flexGrow: 1,

@@ -478,6 +478,10 @@ async function buildSystemPrompt(
     time_of_day: getTimeOfDayLabel(),
     days_since_birth: daysSince(tama.birthDate),
     conversation_count: tama.stats.totalConversations,
+    total_messages: tama.stats.totalMessages,
+    total_memories: tama.stats.totalMemories,
+    current_streak: tama.stats.currentStreak,
+    longest_streak: tama.stats.longestStreak,
   };
 
   // Assembler et remplir le template
