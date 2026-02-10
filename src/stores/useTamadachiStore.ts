@@ -191,6 +191,17 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         batteryLevel: getBatteryLevel(),
         batteryCharging: isBatteryCharging(),
         isInitialized: true,
+      });
+
+      // Rafraîchir la batterie toutes les 30s
+      setInterval(() => {
+        set({
+          batteryLevel: getBatteryLevel(),
+          batteryCharging: isBatteryCharging(),
+        });
+      }, 30000);
+
+      set({
         isInitializing: false,
         isBorn: true,
       });
@@ -260,8 +271,10 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     set({ isGenerating: true, streamingText: '', error: null });
 
     try {
+      // Rafraîchir la batterie maintenant
       const batteryLevel = getBatteryLevel();
       const charging = isBatteryCharging();
+      set({ batteryLevel, batteryCharging: charging });
 
       // 1. Pipeline complet (hormones, XP, mémoire, etc.)
       const result = await processUserMessage(

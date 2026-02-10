@@ -11,7 +11,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTamadachiData, useEvolution, useEmotion } from '../hooks';
+import { useTamadachiData, useEvolution, useEmotion, useBattery,
+} from '../hooks';
 import { useTamadachiStore } from '../stores/useTamadachiStore';
 import { THEME } from '../constants/config';
 import { EVOLUTION_STAGES } from '../constants/evolution';
@@ -64,6 +65,7 @@ interface StatsScreenProps {
 
 export function StatsScreen({ onClose }: StatsScreenProps) {
   const { tamadachi, genome, stats, emotion } = useTamadachiData();
+  const { percent: batteryPercent, isCharging } = useBattery();
   const { stage, totalXP } = useEvolution();
   const { emoji, primary, intensity } = useEmotion();
   const hormones = useTamadachiStore(s => s.hormones);
@@ -203,6 +205,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>📈 Statistiques</Text>
             <View style={styles.card}>
+              <StatRow label="🔋 Batterie" value={`${batteryPercent}%${isCharging ? " ⚡" : ""}`} />
               <StatRow label="Jours de vie" value={`${stats.totalDays || 0}`} />
               <StatRow label="Messages échangés" value={`${stats.totalMessages || 0}`} />
               <StatRow label="Souvenirs créés" value={`${stats.totalMemories || 0}`} />
