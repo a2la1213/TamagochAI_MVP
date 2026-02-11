@@ -61,14 +61,30 @@ export function ChatScreen() {
     if (dream) setDreamToShow(dream);
   }, []);
 
-  // Auto-scroll
+  // Auto-scroll — toujours aller en bas quand nouveau message ou streaming
   useEffect(() => {
     if (messages.length > 0 || streamingText) {
       setTimeout(() => {
-        if (isNearBottom.current) flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 50);
     }
-  }, [messages.length, streamingText]);
+  }, [messages.length]);
+
+  // Scroll en bas pendant le streaming
+  useEffect(() => {
+    if (streamingText) {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }
+  }, [streamingText]);
+
+  // Scroll en bas quand on revient sur le chat
+  useEffect(() => {
+    if (activeScreen === 'chat' && messages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 200);
+    }
+  }, [activeScreen]);
 
   // Sous-écrans
   if (activeScreen === 'settings') {
@@ -158,8 +174,8 @@ export function ChatScreen() {
               contentContainerStyle={styles.messageList}
               showsVerticalScrollIndicator={true}
               onContentSizeChange={() => {
-                if (isNearBottom.current || displayMessages.length !== prevMessageCount.current) {
-                  flatListRef.current?.scrollToEnd({ animated: displayMessages.length !== prevMessageCount.current });
+                if (displayMessages.length !== prevMessageCount.current) {
+                  flatListRef.current?.scrollToEnd({ animated: true });
                   prevMessageCount.current = displayMessages.length;
                 }
               }}
@@ -169,6 +185,8 @@ export function ChatScreen() {
                 isNearBottom.current = distanceFromBottom < 150;
               }}
               scrollEventThrottle={100}
+              initialNumToRender={20}
+              windowSize={10}
             />
             {displayMessages.length > 5 && (
               <View style={styles.scrollButtons}>
