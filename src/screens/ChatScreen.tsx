@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChat, useTamadachiData, useEmotion, useBattery, useEvolution } from '../hooks';
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
+import { ConversationDrawer } from '../components/chat/ConversationDrawer';
 import { TypingIndicator } from '../components/chat/TypingIndicator';
 import { EmptyState } from '../components/chat/EmptyState';
 import { DreamBanner } from '../components/chat/DreamBanner';
@@ -44,6 +45,7 @@ export function ChatScreen() {
 
   const [activeScreen, setActiveScreen] = useState<Screen>('chat');
   const [loadingMore, setLoadingMore] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const allLoaded = useRef(false);
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
@@ -154,9 +156,14 @@ export function ChatScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => setActiveScreen('stats')}>
-          <Text style={styles.headerIcon}>📊</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <TouchableOpacity style={styles.headerButton} onPress={() => setDrawerOpen(true)}>
+            <Text style={styles.headerIcon}>☰</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={() => setActiveScreen('stats')}>
+            <Text style={styles.headerIcon}>📊</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.headerCenter}>
           <Image
             source={require('../../assets/avatars/avatar_default.png')}
@@ -268,6 +275,7 @@ export function ChatScreen() {
         previousStage={previousStage}
         onClose={() => setShowEvolution(false)}
       />
+      <ConversationDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </SafeAreaView>
   );
 }

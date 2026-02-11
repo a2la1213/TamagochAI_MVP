@@ -1322,3 +1322,54 @@ export async function getLastNotificationByReason(reason: string): Promise<{ sen
 
 
 // ============================================================
+
+
+// ============================================================
+// CONVERSATION HISTORY
+// ============================================================
+
+export async function toggleConversationFavorite(conversationId: string): Promise<boolean> {
+  const db = await getDB();
+  const row = await db.getFirstAsync<any>('SELECT is_favorite FROM conversations WHERE id = ?', [conversationId]);
+  const newVal = row?.is_favorite ? 0 : 1;
+  await db.runAsync('UPDATE conversations SET is_favorite = ? WHERE id = ?', [newVal, conversationId]);
+  return newVal === 1;
+}
+
+export async function renameConversation(conversationId: string, title: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync('UPDATE conversations SET title = ? WHERE id = ?', [title, conversationId]);
+}
+
+export async function loadConversationMessages(conversationId: string): Promise<any[]> {
+  const db = await getDB();
+  const rows = await db.getAllAsync<any>(
+    'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC',
+    [conversationId]
+  );
+  return rows.map(r => ({
+    ...r,
+    attachments: r.attachments ? JSON.parse(r.attachments) : undefined,
+  }));
+}
+
+export async function switchToConversation(tamadachiId: string, conversationId: string): Promise<void> {
+  const db = await getDB();
+  // Désactiver toutes les conversations
+  await db.runAsync('UPDATE conversations SET is_active = 0 WHERE tamadachi_id = ?', [tamadachiId]);
+  // Activer celle-ci
+  await db.runAsync('UPDATE conversations SET is_active = 1 WHERE id = ?', [conversationId]);
+}
+
+export async function createNewConversation(tamadachiId: string): Promise<string> {
+  const db = await getDB();
+  const id = generateId();
+  // Désactiver les anciennes
+  await db.runAsync('UPDATE conversations SET is_active = 0 WHERE tamadachi_id = ?', [tamadachiId]);
+  // Créer la nouvelle
+  await db.runAsync(
+    "INSERT INTO conversations (id, tamadachi_id, title, is_active, created_at, updated_at) VALUES (?, ?, ?, 1, datetime('now'), datetime('now'))",
+    [id, tamadachiId, 'Nouvelle conversation']
+  );
+  return id;
+}
