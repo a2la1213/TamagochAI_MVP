@@ -95,6 +95,7 @@ import {
 } from '../services/sensors/BatteryService';
 import { getApproxLocation } from '../services/sensors/LocationService';
 import { initSensors, stopSensors } from '../services/sensors/SensorService';
+import { setQuickReplyHandler } from '../services/core/NotificationService';
 
 import { createLogger } from '../utils/helpers';
 
@@ -199,6 +200,11 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       // Récupérer la localisation et démarrer les capteurs
       getApproxLocation().catch(() => {});
       initSensors().catch(() => {});
+
+      // Connecter les réponses rapides aux notifications
+      setQuickReplyHandler((text: string) => {
+        get().sendMessage(text);
+      });
 
       // Rafraîchir la batterie toutes les 30s
       setInterval(() => {

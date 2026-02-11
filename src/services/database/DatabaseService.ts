@@ -1274,3 +1274,51 @@ function mapRowToMemory(row: any): Memory {
     updatedAt: row.updated_at,
   };
 }
+
+
+// ============================================================
+// NOTIFICATION HISTORY
+// ============================================================
+
+export async function saveNotification(id: string, reason: string, message: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync(
+    'INSERT INTO notification_history (id, reason, message, sent_at) VALUES (?, ?, ?, ?)',
+    [id, reason, message, new Date().toISOString()]
+  );
+}
+
+export async function markNotificationOpened(id: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync('UPDATE notification_history SET was_opened = 1 WHERE id = ?', [id]);
+}
+
+export async function saveNotificationReply(id: string, replyText: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync(
+    'UPDATE notification_history SET reply_text = ?, replied_at = ? WHERE id = ?',
+    [replyText, new Date().toISOString(), id]
+  );
+}
+
+export async function getRecentNotifications(limit: number = 10): Promise<Array<{
+  id: string; reason: string; message: string; sent_at: string; was_opened: number; reply_text: string | null;
+}>> {
+  const db = await getDB();
+  return await db.getAllAsync(
+    'SELECT * FROM notification_history ORDER BY sent_at DESC LIMIT ?',
+    [limit]
+  ) as any[];
+}
+
+export async function getLastNotificationByReason(reason: string): Promise<{ sent_at: string; message: string } | null> {
+  const db = await getDB();
+  const row = await db.getFirstAsync(
+    'SELECT sent_at, message FROM notification_history WHERE reason = ? ORDER BY sent_at DESC LIMIT 1',
+    [reason]
+  );
+  return row as any;
+}
+
+
+// ============================================================

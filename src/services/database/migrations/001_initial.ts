@@ -338,6 +338,26 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Insérer les settings par défaut
 INSERT OR IGNORE INTO settings (key, value) VALUES ('xp_mode', 'prototype');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'light');
+CREATE TABLE IF NOT EXISTS notification_history (
+  id TEXT PRIMARY KEY,
+  reason TEXT NOT NULL,
+  message TEXT NOT NULL,
+  sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  was_opened INTEGER NOT NULL DEFAULT 0,
+  reply_text TEXT,
+  replied_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notification_history (
+  id TEXT PRIMARY KEY,
+  reason TEXT NOT NULL,
+  message TEXT NOT NULL,
+  sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  was_opened INTEGER NOT NULL DEFAULT 0,
+  reply_text TEXT,
+  replied_at TEXT
+);
+
 INSERT OR IGNORE INTO settings (key, value) VALUES ('notifications_enabled', 'true');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('haptics_enabled', 'true');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('auto_save_enabled', 'true');

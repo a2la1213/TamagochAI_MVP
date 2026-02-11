@@ -98,6 +98,7 @@ import {
   truncate,
 } from '../../utils/helpers';
 import { getCachedLocation } from '../sensors/LocationService';
+import { getNotificationDigest } from './NotificationService';
 import { getSensorDigest } from '../sensors/SensorService';
 
 const log = createLogger('Conversation');
@@ -489,6 +490,7 @@ async function buildSystemPrompt(
     battery_level: batteryLevel != null ? formatBattery(batteryLevel) : 'non disponible',
     user_location: getCachedLocation(),
     sensor_digest: getSensorDigest(),
+    notification_digest: await getNotificationDigest(),
     time_of_day: getTimeOfDayLabel(),
     days_since_birth: daysSince(tama.birthDate),
     conversation_count: tama.stats.totalConversations,

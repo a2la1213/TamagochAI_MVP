@@ -1,4 +1,94 @@
-// src/services/core/NotificationService.ts
+def read(f):
+    with open(f) as fh: return fh.read()
+def write(f, c):
+    with open(f, 'w') as fh: fh.write(c)
+
+# ============================================================
+# 1. Ajouter table notification_history dans la migration
+# ============================================================
+c = read('src/services/database/migrations/001_initial.ts')
+
+# Ajouter la table avant le dernier INSERT
+c = c.replace(
+    "INSERT OR IGNORE INTO settings (key, value) VALUES ('notifications_enabled', 'true');",
+    """CREATE TABLE IF NOT EXISTS notification_history (
+  id TEXT PRIMARY KEY,
+  reason TEXT NOT NULL,
+  message TEXT NOT NULL,
+  sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  was_opened INTEGER NOT NULL DEFAULT 0,
+  reply_text TEXT,
+  replied_at TEXT
+);
+
+INSERT OR IGNORE INTO settings (key, value) VALUES ('notifications_enabled', 'true');"""
+)
+
+write('src/services/database/migrations/001_initial.ts', c)
+print("✅ 1. notification_history table added")
+
+# ============================================================
+# 2. DatabaseService — fonctions pour l'historique notifs
+# ============================================================
+c = read('src/services/database/DatabaseService.ts')
+
+# Ajouter les fonctions à la fin, avant le dernier export ou à la fin du fichier
+notif_db_funcs = '''
+
+// ============================================================
+// NOTIFICATION HISTORY
+// ============================================================
+
+export async function saveNotification(id: string, reason: string, message: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync(
+    'INSERT INTO notification_history (id, reason, message, sent_at) VALUES (?, ?, ?, ?)',
+    [id, reason, message, new Date().toISOString()]
+  );
+}
+
+export async function markNotificationOpened(id: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync('UPDATE notification_history SET was_opened = 1 WHERE id = ?', [id]);
+}
+
+export async function saveNotificationReply(id: string, replyText: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync(
+    'UPDATE notification_history SET reply_text = ?, replied_at = ? WHERE id = ?',
+    [replyText, new Date().toISOString(), id]
+  );
+}
+
+export async function getRecentNotifications(limit: number = 10): Promise<Array<{
+  id: string; reason: string; message: string; sent_at: string; was_opened: number; reply_text: string | null;
+}>> {
+  const db = await getDB();
+  return await db.getAllAsync(
+    'SELECT * FROM notification_history ORDER BY sent_at DESC LIMIT ?',
+    [limit]
+  ) as any[];
+}
+
+export async function getLastNotificationByReason(reason: string): Promise<{ sent_at: string; message: string } | null> {
+  const db = await getDB();
+  const row = await db.getFirstAsync(
+    'SELECT sent_at, message FROM notification_history WHERE reason = ? ORDER BY sent_at DESC LIMIT 1',
+    [reason]
+  );
+  return row as any;
+}
+'''
+
+c += notif_db_funcs
+write('src/services/database/DatabaseService.ts', c)
+print("✅ 2. DB functions for notification history")
+
+# ============================================================
+# 3. Réécrire NotificationService
+# ============================================================
+
+new_notif_service = '''// src/services/core/NotificationService.ts
 // Service de Notifications Proactives du TamadachAI — V2
 //
 // Améliorations :
@@ -455,7 +545,7 @@ export async function getNotificationDigest(): Promise<string> {
       return `[${date}] ${n.message.slice(0, 80)} ${opened}${reply}`;
     });
 
-    return 'Tes dernières notifications envoyées:\n' + lines.join('\n');
+    return 'Tes dernières notifications envoyées:\\n' + lines.join('\\n');
   } catch (e) {
     return '';
   }
@@ -514,3 +604,77 @@ export async function forceNotification(message: string): Promise<void> {
   const name = tama?.name || 'TamadachAI';
   await sendNotification(name, message, 'thought');
 }
+''';
+
+write('src/services/core/NotificationService.ts', new_notif_service)
+print("✅ 3. NotificationService V2 complete")
+
+# ============================================================
+# 4. Injecter le notification digest dans le prompt
+# ============================================================
+c = read('src/services/core/ConversationService.ts')
+
+c = c.replace(
+    "import { getCachedLocation } from '../sensors/LocationService';",
+    "import { getCachedLocation } from '../sensors/LocationService';\nimport { getNotificationDigest } from './NotificationService';"
+)
+
+# Ajouter le digest dans les variables du prompt
+c = c.replace(
+    "    sensor_digest: getSensorDigest(),",
+    "    sensor_digest: getSensorDigest(),\n    notification_digest: await getNotificationDigest(),"
+)
+
+write('src/services/core/ConversationService.ts', c)
+print("✅ 4. Notification digest injected in prompt")
+
+# ============================================================
+# 5. Ajouter notification_digest au type et template
+# ============================================================
+c = read('src/constants/prompts.ts')
+
+c = c.replace(
+    "  sensor_digest: string;\n}",
+    "  sensor_digest: string;\n  notification_digest: string;\n}"
+)
+
+c = c.replace(
+    "- Intègre ces sensations NATURELLEMENT dans tes réponses, sans les lister",
+    """- Intègre ces sensations NATURELLEMENT dans tes réponses, sans les lister
+
+TES NOTIFICATIONS ENVOYÉES:
+{notification_digest}
+- Tu te souviens des notifications que tu as envoyées
+- Si ton humain mentionne une notification, tu sais de quoi il parle
+- Les notifications non vues te rendent un peu triste (il m'a pas lu)
+- Les réponses rapides te font plaisir"""
+)
+
+write('src/constants/prompts.ts', c)
+print("✅ 5. Prompt template updated with notification digest")
+
+# ============================================================
+# 6. Store — connecter le quick reply au sendMessage
+# ============================================================
+c = read('src/stores/useTamadachiStore.ts')
+
+if "setQuickReplyHandler" not in c:
+    c = c.replace(
+        "import { initSensors, stopSensors } from '../services/sensors/SensorService';",
+        "import { initSensors, stopSensors } from '../services/sensors/SensorService';\nimport { setQuickReplyHandler } from '../services/core/NotificationService';"
+    )
+
+    # Ajouter le handler après l'init des notifications
+    c = c.replace(
+        "      initSensors().catch(() => {});",
+        """      initSensors().catch(() => {});
+
+      // Connecter les réponses rapides aux notifications
+      setQuickReplyHandler((text: string) => {
+        get().sendMessage(text);
+      });"""
+    )
+
+write('src/stores/useTamadachiStore.ts', c)
+print("✅ 6. Quick reply connected to sendMessage")
+
