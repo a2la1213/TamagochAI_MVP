@@ -241,7 +241,7 @@ export async function storeMemory(
     }
 
     const id = await createMemory(tamadachiId, memory.type, memory.content, {
-      context: originalMessage ? originalMessage.slice(0, 500) : undefined,
+      context: originalMessage ? originalMessage : undefined,
       importance: memory.importance,
       emotionalWeight: memory.emotionalWeight,
       isFlash: memory.type === 'flash',
@@ -285,7 +285,7 @@ export async function processMessageForMemories(
   // Stocker aussi le message brut comme souvenir "topic" si assez long
   // Cela permet au TamadachAI de retrouver le contenu exact plus tard
   if (role === 'user' && message.length > 100) {
-    const topicContent = 'Message complet de l\'humain: "' + message.slice(0, 400) + '"';
+    const topicContent = 'Message complet de l\'humain: "' + message + '"';
     const topicExists = await memoryExists(tamadachiId, topicContent.slice(0, 100));
     if (!topicExists) {
       await createMemory(tamadachiId, 'topic', topicContent, {

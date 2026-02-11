@@ -76,7 +76,7 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
           // Lire le contenu texte du fichier
           const content = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.UTF8 });
           const filePreview = '📄 ' + asset.name;
-          const fileContent = '--- Contenu du fichier "' + asset.name + '" ---\n' + content.slice(0, 5000) + (content.length > 5000 ? '\n[... tronqué, ' + content.length + ' caractères au total]' : '') + '\n--- Fin du fichier ---';
+          const fileContent = '--- Contenu du fichier "' + asset.name + '" ---\n' + content + (content.length > 5000 ? '\n[... tronqué, ' + content.length + ' caractères au total]' : '') + '\n--- Fin du fichier ---';
           setAttachments(prev => [...prev, {
             type: 'file' as any,
             uri: asset.uri,
@@ -91,7 +91,7 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
           try {
             // Essayer de lire comme texte (certains formats le permettent)
             content = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.UTF8 });
-            content = content.slice(0, 5000);
+            content = content;
           } catch (e) {
             content = '[Contenu binaire - impossible de lire le texte directement]';
           }
@@ -111,7 +111,7 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
           let content = '';
           try {
             content = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.UTF8 });
-            content = content.slice(0, 3000);
+            content = content;
             const fileContent = '--- Fichier "' + asset.name + '" ---\n' + content + '\n--- Fin du fichier ---';
             setAttachments(prev => [...prev, {
               type: 'file' as any,
@@ -238,7 +238,6 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
         placeholder={placeholder || 'Écris un message...'}
         placeholderTextColor={THEME.colors.textSecondary}
         multiline
-        maxLength={2000}
         editable={!isGenerating}
         onSubmitEditing={handleSend}
         blurOnSubmit={false}

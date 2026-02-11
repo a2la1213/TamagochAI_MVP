@@ -23,10 +23,10 @@ export const APP_CONFIG = {
 
   // Limites
   limits: {
-    maxMessageLength: 5000,
+    maxMessageLength: Infinity,
     maxConversationMessages: 200,
     maxMemories: 1000,
-    maxMemoryContentLength: 500,
+    maxMemoryContentLength: Infinity,
     maxConversationsActive: 1,
   },
 } as const;
@@ -68,7 +68,7 @@ export const LLM_CONFIG = {
       models: ['gemini-2.0-flash', 'gemini-2.0-flash'],
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
       isPaid: false,
-      maxTokens: 4096,
+      maxTokens: 8192,
       description: 'Gratuit, rapide, bon par défaut',
     },
     claude: {
@@ -77,7 +77,7 @@ export const LLM_CONFIG = {
       models: ['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001'],
       baseUrl: 'https://api.anthropic.com/v1/messages',
       isPaid: true,
-      maxTokens: 4096,
+      maxTokens: 8192,
       description: 'Empathique, meilleure personnalité',
     },
     openai: {
@@ -86,7 +86,7 @@ export const LLM_CONFIG = {
       models: ['gpt-4o-mini', 'gpt-4o'],
       baseUrl: 'https://api.openai.com/v1/chat/completions',
       isPaid: true,
-      maxTokens: 4096,
+      maxTokens: 8192,
       description: 'Populaire, polyvalent',
     },
     mistral: {
@@ -95,7 +95,7 @@ export const LLM_CONFIG = {
       models: ['mistral-small-latest', 'mistral-medium-latest'],
       baseUrl: 'https://api.mistral.ai/v1/chat/completions',
       isPaid: true,
-      maxTokens: 4096,
+      maxTokens: 8192,
       description: 'Français, rapide, bon marché',
     },
     local: {
@@ -104,7 +104,7 @@ export const LLM_CONFIG = {
       models: ['mistral-7b', 'phi3-mini'],
       baseUrl: '',
       isPaid: false,
-      maxTokens: 4096,
+      maxTokens: 8192,
       description: '100% offline, privé, gratuit',
     },
   },
@@ -143,14 +143,14 @@ export const LLM_CONFIG = {
     topP: 0.9,
     topK: 40,
     repeatPenalty: 1.1,
-    maxTokens: 4096,
+    maxTokens: 8192,
   },
 
   // Paramètres par type de message
   messageParams: {
-    greeting: { maxTokens: 150, temperature: 0.7 },
-    question: { maxTokens: 600, temperature: 0.7 },
-    creative: { maxTokens: 1000, temperature: 0.9 },
+    greeting: { maxTokens: 1000, temperature: 0.7 },
+    question: { maxTokens: 4096, temperature: 0.7 },
+    creative: { maxTokens: 8192, temperature: 0.9 },
     emotional: { maxTokens: 400, temperature: 0.8 },
     existential: { maxTokens: 800, temperature: 0.85 },
     default: { maxTokens: 500, temperature: 0.8 },
