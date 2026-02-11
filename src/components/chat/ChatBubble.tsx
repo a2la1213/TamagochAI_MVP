@@ -85,11 +85,13 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.primary,
     borderBottomRightRadius: 4,
     width: '100%',
+    marginHorizontal: 8,
   },
   assistantBubble: {
     backgroundColor: THEME.colors.surface,
     borderBottomLeftRadius: 4,
     width: '100%',
+    marginHorizontal: 8,
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },

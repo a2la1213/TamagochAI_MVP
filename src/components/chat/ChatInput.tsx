@@ -217,15 +217,24 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
             </View>
             <TouchableOpacity style={styles.modalOption} onPress={() => { setShowAttachMenu(false); takePhoto(); }}>
               <Text style={styles.modalOptionEmoji}>📷</Text>
-              <Text style={styles.modalOptionText}>Prendre une photo</Text>
+              <View style={styles.modalOptionTextWrap}>
+                <Text style={styles.modalOptionText}>Prendre une photo</Text>
+                <Text style={styles.modalOptionSub}>Caméra</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modalOption} onPress={() => { setShowAttachMenu(false); pickImage(); }}>
               <Text style={styles.modalOptionEmoji}>🖼️</Text>
-              <Text style={styles.modalOptionText}>Galerie</Text>
+              <View style={styles.modalOptionTextWrap}>
+                <Text style={styles.modalOptionText}>Galerie</Text>
+                <Text style={styles.modalOptionSub}>Photos et images</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modalOption} onPress={() => { setShowAttachMenu(false); pickDocument(); }}>
               <Text style={styles.modalOptionEmoji}>📄</Text>
-              <Text style={styles.modalOptionText}>Fichier / Document</Text>
+              <View style={styles.modalOptionTextWrap}>
+                <Text style={styles.modalOptionText}>Fichier / Document</Text>
+                <Text style={styles.modalOptionSub}>PDF, code, texte, Excel...</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -414,9 +423,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginRight: 16,
   },
+  modalOptionTextWrap: {
+    flex: 1,
+  },
   modalOptionText: {
     fontSize: 16,
     color: THEME.colors.text,
+  },
+  modalOptionSub: {
+    fontSize: 12,
+    color: THEME.colors.textSecondary,
+    marginTop: 2,
   },
   fileThumb: {
     backgroundColor: THEME.colors.surface,

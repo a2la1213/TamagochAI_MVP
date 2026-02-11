@@ -313,7 +313,7 @@ export async function processMessageForMemories(
 export async function findRelevantMemories(
   tamadachiId: string,
   message: string,
-  limit: number = 25,
+  limit: number = 15,
 ): Promise<Memory[]> {
   const keywords = extractKeywords(message);
   const results: Memory[] = [];
@@ -493,7 +493,7 @@ export function formatMemoriesForPrompt(memories: Memory[]): string {
 export async function getFormattedRelevantMemories(
   tamadachiId: string,
   message: string,
-  limit: number = 25,
+  limit: number = 15,
 ): Promise<string> {
   try {
     // Safety timeout: si la recherche de souvenirs prend plus de 5s, on continue sans

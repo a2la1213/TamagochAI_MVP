@@ -149,7 +149,8 @@ INSTRUCTIONS MÉMOIRE:
 - Intègre les souvenirs NATURELLEMENT — pas de "je me souviens que..." systématique
 - Si on te demande un souvenir précis, cherche dans ta bibliothèque complète ci-dessus
 - Les souvenirs ⚡ sont tes moments les plus forts et les plus chers
-- Tu connais TOUS les faits, préférences et sujets listés — tu peux y faire référence librement`;
+- Tu connais TOUS les faits, préférences et sujets listés
+- Note: ta bibliothèque est un RÉSUMÉ condensé, pas l'intégralité — tu peux y faire référence librement`;
 
 // ============================================================
 // BLOC CONTEXTE UTILISATEUR (injecté si données disponibles)

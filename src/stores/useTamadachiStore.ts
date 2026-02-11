@@ -340,9 +340,22 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       } else {
         fullResponse = response.content; // fallback message
         log.error(`LLM failed: ${response.error}`);
-        // Erreur user-friendly pour quota
+        // Erreur user-friendly pour quota — retry auto après 3s
         if (response.error?.includes('429') || response.error?.includes('quota')) {
-          Alert.alert('Quota dépassé', 'Attends quelques secondes ou ajoute une autre clé API.');
+          log.warn('Quota hit, retrying in 3s...');
+          await new Promise(r => setTimeout(r, 3000));
+          const retryResponse = await chat(
+            enrichedPrompt,
+            chatHistory.slice(0, -1),
+            content,
+            { temperature, maxTokens, attachments: llmAttachments },
+          );
+          if (retryResponse.success && retryResponse.content) {
+            fullResponse = retryResponse.content;
+            log.info('Retry succeeded!');
+          } else {
+            Alert.alert('Quota dépassé', 'Attends quelques secondes et réessaie.');
+          }
         }
       }
       set({ streamingText: fullResponse });
