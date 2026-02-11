@@ -1,7 +1,7 @@
 // src/screens/ChatScreen.tsx
 // Écran principal — Dark theme, avatar, typing indicator, dream banner
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Text,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChat, useTamadachiData, useEmotion, useBattery, useEvolution } from '../hooks';
@@ -27,6 +28,8 @@ import { BatteryIndicator } from '../components/common/BatteryIndicator';
 import { THEME } from '../constants/config';
 import { Message, Dream, EvolutionStage } from '../types';
 import { getUnsharedDream, markDreamAsShared } from '../services/core/DreamService';
+import { getAllMessages } from '../services/core/ConversationService';
+import { useTamadachiStore } from '../stores/useTamadachiStore';
 
 type Screen = 'chat' | 'settings' | 'stats';
 
@@ -40,6 +43,8 @@ export function ChatScreen() {
   const prevMessageCount = useRef(0);
 
   const [activeScreen, setActiveScreen] = useState<Screen>('chat');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const allLoaded = useRef(false);
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
   const [evolutionStage, setEvolutionStage] = useState<EvolutionStage>(stage);
@@ -60,6 +65,27 @@ export function ChatScreen() {
     const dream = getUnsharedDream();
     if (dream) setDreamToShow(dream);
   }, []);
+
+  // Charger plus de messages quand on scroll en haut
+  const loadMoreMessages = useCallback(async () => {
+    if (loadingMore || allLoaded.current) return;
+    setLoadingMore(true);
+    try {
+      const store = useTamadachiStore.getState();
+      const tama = store.tamadachi;
+      if (!tama) return;
+      const currentCount = messages.length;
+      const allMsgs = await getAllMessages(tama.id, currentCount + 50);
+      if (allMsgs.length <= currentCount) {
+        allLoaded.current = true;
+      } else {
+        useTamadachiStore.setState({ messages: allMsgs });
+      }
+    } catch (e) {
+      console.warn('Load more failed:', e);
+    }
+    setLoadingMore(false);
+  }, [messages.length, loadingMore]);
 
   // Auto-scroll — toujours aller en bas quand nouveau message ou streaming
   useEffect(() => {
@@ -183,10 +209,18 @@ export function ChatScreen() {
                 const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
                 const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
                 isNearBottom.current = distanceFromBottom < 150;
+                // Charger plus quand on est en haut
+                if (contentOffset.y < 100 && !loadingMore) {
+                  loadMoreMessages();
+                }
               }}
               scrollEventThrottle={100}
               initialNumToRender={20}
-              windowSize={10}
+              windowSize={5}
+              maxToRenderPerBatch={10}
+              removeClippedSubviews={true}
+              onEndReachedThreshold={0.1}
+              ListHeaderComponent={loadingMore ? <View style={{ padding: 10, alignItems: 'center' }}><ActivityIndicator size="small" color={THEME.colors.primary} /></View> : null}
             />
             {displayMessages.length > 5 && (
               <View style={styles.scrollButtons}>

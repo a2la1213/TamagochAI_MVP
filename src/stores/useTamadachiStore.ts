@@ -184,7 +184,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       }
 
       await initAllServices(tama);
-      const messages = await getAllMessages(tama.id, 200);
+      const messages = await getAllMessages(tama.id, 50);
 
       set({
         tamadachi: tama,
@@ -241,7 +241,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       if (!tama) throw new Error('Failed to retrieve created TamadachAI');
 
       await initAllServices(tama);
-      const messages = await getAllMessages(tama.id, 200);
+      const messages = await getAllMessages(tama.id, 50);
 
       set({
         tamadachi: tama,
