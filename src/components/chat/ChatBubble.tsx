@@ -70,9 +70,11 @@ const styles = StyleSheet.create({
   },
   userContainer: {
     alignSelf: 'flex-end',
+    width: '100%',
   },
   assistantContainer: {
     alignSelf: 'flex-start',
+    width: '100%',
   },
   bubble: {
     paddingHorizontal: 14,
@@ -82,10 +84,12 @@ const styles = StyleSheet.create({
   userBubble: {
     backgroundColor: THEME.colors.primary,
     borderBottomRightRadius: 4,
+    width: '100%',
   },
   assistantBubble: {
     backgroundColor: THEME.colors.surface,
     borderBottomLeftRadius: 4,
+    width: '100%',
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },

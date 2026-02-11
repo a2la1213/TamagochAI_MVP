@@ -179,6 +179,9 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
               <View>
                 <Text style={styles.emotionPrimary}>{EMOTION_FR[primary] || primary}</Text>
                 <Text style={styles.emotionIntensity}>Intensité : {intensity}%</Text>
+                <View style={styles.intensityBarBg}>
+                  <View style={[styles.intensityBarFill, { width: `${intensity}%`, backgroundColor: intensity > 70 ? THEME.colors.primary : intensity > 40 ? '#F5A623' : THEME.colors.textSecondary }]} />
+                </View>
               </View>
             </View>
           </View>
@@ -353,7 +356,9 @@ const styles = StyleSheet.create({
   emotionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   emotionEmoji: { fontSize: 36 },
   emotionPrimary: { fontSize: 18, fontWeight: '600', color: THEME.colors.text, textTransform: 'capitalize' },
-  emotionIntensity: { fontSize: 13, color: THEME.colors.textSecondary },
+  emotionIntensity: { fontSize: 13, color: THEME.colors.textSecondary, marginBottom: 4 },
+  intensityBarBg: { height: 6, backgroundColor: THEME.colors.border, borderRadius: 3, overflow: 'hidden', marginTop: 2 },
+  intensityBarFill: { height: '100%', borderRadius: 3 },
 
   // Hormones
   hormoneRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 5 },

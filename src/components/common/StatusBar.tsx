@@ -38,7 +38,7 @@ export function StatusBar() {
       {/* Émotion */}
       <View style={styles.item}>
         <Text style={styles.emoji}>{emoji}</Text>
-        <Text style={styles.label} numberOfLines={1}>{EMOTION_FR[primary] || primary}</Text>
+        <Text style={styles.label}>{EMOTION_FR[primary] || primary}</Text>
       </View>
 
       {/* Stade + XP */}
@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: THEME.colors.textSecondary,
     flexShrink: 0,
+    minWidth: 50,
   },
   xpText: {
     fontSize: 14,

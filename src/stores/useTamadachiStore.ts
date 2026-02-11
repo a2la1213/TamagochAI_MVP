@@ -94,6 +94,7 @@ import {
   isCharging as isBatteryCharging,
 } from '../services/sensors/BatteryService';
 import { getApproxLocation } from '../services/sensors/LocationService';
+import { initSensors, stopSensors } from '../services/sensors/SensorService';
 
 import { createLogger } from '../utils/helpers';
 
@@ -195,8 +196,9 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         isInitialized: true,
       });
 
-      // Récupérer la localisation
+      // Récupérer la localisation et démarrer les capteurs
       getApproxLocation().catch(() => {});
+      initSensors().catch(() => {});
 
       // Rafraîchir la batterie toutes les 30s
       setInterval(() => {
