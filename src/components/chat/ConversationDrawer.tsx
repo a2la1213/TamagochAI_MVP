@@ -27,10 +27,12 @@ interface ConversationItem {
   title: string | null;
   summary: string | null;
   message_count: number;
+  real_msg_count?: number;
   is_active: number;
   is_favorite: number;
   created_at: string;
   updated_at: string;
+  last_message_at?: string;
   mood: string;
 }
 
@@ -98,7 +100,7 @@ export function ConversationDrawer({ visible, onClose }: Props) {
 
   const renderConversation = ({ item }: { item: ConversationItem }) => {
     const isActive = item.is_active === 1;
-    const date = parseDate(item.created_at);
+    const date = parseDate(item.last_message_at || item.updated_at || item.created_at);
     const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     let title = item.title;
     if (!title || title === 'Nouvelle conversation') {
@@ -245,7 +247,7 @@ function getDateLabel(dateStr: string): string {
 function groupByDate(conversations: ConversationItem[]): Map<string, ConversationItem[]> {
   const groups = new Map<string, ConversationItem[]>();
   for (const conv of conversations) {
-    const label = getDateLabel(conv.created_at);
+    const label = getDateLabel(conv.last_message_at || conv.updated_at || conv.created_at);
     if (!groups.has(label)) groups.set(label, []);
     groups.get(label)!.push(conv);
   }
