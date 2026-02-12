@@ -1395,3 +1395,21 @@ export async function updateMessageAttachments(messageId: string, attachments: a
     [JSON.stringify(attachments), messageId]
   );
 }
+
+/**
+ * Supprime les conversations vides (sauf la plus récente)
+ */
+export async function cleanEmptyConversations(tamadachiId: string): Promise<number> {
+  const db = await getDB();
+  // Garder la conversation active la plus récente même si vide
+  const latest = await db.getFirstAsync<any>(
+    'SELECT id FROM conversations WHERE tamadachi_id = ? AND is_active = 1 ORDER BY updated_at DESC LIMIT 1',
+    [tamadachiId]
+  );
+  const excludeId = latest?.id || '';
+  const result = await db.runAsync(
+    'DELETE FROM conversations WHERE tamadachi_id = ? AND message_count = 0 AND id != ?',
+    [tamadachiId, excludeId]
+  );
+  return result.changes;
+}

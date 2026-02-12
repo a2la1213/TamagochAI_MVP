@@ -55,6 +55,7 @@ import {
   updateTamadachi,
   upsertDailyStats,
   getDB,
+  cleanEmptyConversations,
 } from '../database/DatabaseService';
 
 // Core services
@@ -124,26 +125,35 @@ let lastMessageTime: string | null = null;
  */
 export async function initConversation(tamadachiId: string): Promise<string> {
   try {
+    // Nettoyer les conversations vides
+    await cleanEmptyConversations(tamadachiId);
+
     // Vérifier s'il y a une conversation active
     const existing = await getActiveConversation(tamadachiId);
 
     if (existing) {
-      // Vérifier si elle est trop vieille (timeout d'inactivité)
       const lastMsg = await getLastMessage(existing.id);
-      if (lastMsg) {
-        const minutesSince = diffInMinutes(lastMsg.createdAt, now());
-        if (minutesSince > CONVERSATION_CONFIG.session.inactivityTimeout / (1000 * 60)) {
-          // Terminer l'ancienne conversation
-          await endConversation(existing.id, 'inactivity_timeout');
-          log.info(`Previous conversation ended (${minutesSince.toFixed(0)} min inactive)`);
-        } else {
-          // Reprendre la conversation existante
-          activeConversationId = existing.id;
-          messageCountThisSession = existing.messageCount;
-          lastMessageTime = lastMsg.createdAt;
-          log.info(`Resumed conversation: ${existing.id} (${existing.messageCount} messages)`);
-          return existing.id;
-        }
+      
+      // Si la conversation est vide (0 messages), la réutiliser
+      if (!lastMsg || existing.messageCount === 0) {
+        activeConversationId = existing.id;
+        messageCountThisSession = 0;
+        log.info(`Reusing empty conversation: ${existing.id}`);
+        return existing.id;
+      }
+
+      const minutesSince = diffInMinutes(lastMsg.createdAt, now());
+      if (minutesSince > CONVERSATION_CONFIG.session.inactivityTimeout / (1000 * 60)) {
+        // Terminer l'ancienne conversation
+        await endConversation(existing.id, 'inactivity_timeout');
+        log.info(`Previous conversation ended (${minutesSince.toFixed(0)} min inactive)`);
+      } else {
+        // Reprendre la conversation existante
+        activeConversationId = existing.id;
+        messageCountThisSession = existing.messageCount;
+        lastMessageTime = lastMsg.createdAt;
+        log.info(`Resumed conversation: ${existing.id} (${existing.messageCount} messages)`);
+        return existing.id;
       }
     }
 

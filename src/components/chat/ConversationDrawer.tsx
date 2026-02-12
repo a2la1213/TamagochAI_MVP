@@ -141,7 +141,7 @@ export function ConversationDrawer({ visible, onClose }: Props) {
                 {title}
               </Text>
               <Text style={styles.convMeta}>
-                {time} · {item.message_count || 0} msgs · {getMoodEmoji(item.mood)}
+                {time} · {getMoodEmoji(item.mood)}
               </Text>
             </>
           )}
