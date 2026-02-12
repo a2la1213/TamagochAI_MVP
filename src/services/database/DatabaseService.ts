@@ -37,7 +37,7 @@ const log = createLogger('DB');
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
 
-async function getDB(): Promise<SQLite.SQLiteDatabase> {
+export async function getDB(): Promise<SQLite.SQLiteDatabase> {
   if (!dbInstance) {
     dbInstance = await SQLite.openDatabaseAsync(DB_CONFIG.name);
     log.info('Database opened:', DB_CONFIG.name);
@@ -69,6 +69,16 @@ export async function initDatabase(): Promise<void> {
     // Exécuter la migration initiale
     await db.execAsync(MIGRATION_001);
     log.info('Migration 001 applied');
+
+    // Migrations incrémentales (safe si colonnes existent déjà)
+    const alterMigrations = [
+      'ALTER TABLE messages ADD COLUMN attachments TEXT',
+      'ALTER TABLE conversations ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0',
+    ];
+    for (const sql of alterMigrations) {
+      try { await db.runAsync(sql); } catch (_) { /* duplicate column = OK */ }
+    }
+    log.info('Incremental migrations applied');
 
     log.info('✅ Database initialized successfully');
   } catch (error) {

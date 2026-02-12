@@ -287,6 +287,13 @@ export function ChatScreen() {
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}
           placeholder={`Parle à ${name}...`}
+          listening={voice.listening}
+          partialText={voice.partialText}
+          onMicPress={voice.toggleListening}
+          voiceMode={voice.voiceMode}
+          onToggleVoiceMode={voice.toggleVoiceMode}
+          speaking={voice.speaking}
+          onStopSpeak={voice.stopSpeak}
         />
       </KeyboardAvoidingView>
 

@@ -483,8 +483,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 14,
     color: THEME.colors.textSecondary,
     opacity: 0.5,
+    letterSpacing: 1,
   },
 });
