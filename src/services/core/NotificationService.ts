@@ -10,6 +10,8 @@
 import * as Notifications from 'expo-notifications';
 import {
   getSetting,
+  insertMessage,
+  getActiveConversation as dbGetActiveConversation,
   setSetting,
   getTamadachi,
   saveNotification,
@@ -122,6 +124,19 @@ export async function initNotifications(): Promise<void> {
           log.info(`💬 Quick reply received: "${userInput.substring(0, 50)}"`);
           
           // Envoyer comme message dans le chat
+          // Sauver la réponse dans la conversation directement
+          try {
+            const tama = await getTamadachi();
+            if (tama) {
+              const conv = await dbGetActiveConversation(tama.id);
+              if (conv) {
+                await insertMessage(conv.id, 'user', userInput, {});
+              }
+            }
+          } catch (e) {
+            log.warn('Failed to save quick reply in DB:', e);
+          }
+
           if (onQuickReply) {
             onQuickReply(userInput);
           }
@@ -425,6 +440,22 @@ async function sendNotification(
 
     // Sauvegarder dans l'historique
     await saveNotification(notifId, reason, body);
+
+    // Inscrire la notification dans le fil de conversation
+    try {
+      const tama = await getTamadachi();
+      if (tama) {
+        const conv = await dbGetActiveConversation(tama.id);
+        if (conv) {
+          await insertMessage(conv.id, 'assistant', body, {
+            provider: 'notification',
+            emotionAtTime: reason,
+          });
+        }
+      }
+    } catch (e) {
+      log.warn('Failed to save notification in conversation:', e);
+    }
 
     lastNotificationTime = Date.now();
     await setSetting('last_notification_time', String(lastNotificationTime));

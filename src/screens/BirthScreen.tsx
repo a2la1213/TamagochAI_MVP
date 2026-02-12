@@ -25,17 +25,21 @@ import { getAvailableProviders } from '../services/llm/LLMOrchestrator';
 type Phase = 'input' | 'egg_idle' | 'egg_shake' | 'egg_crack' | 'hatch' | 'genome' | 'done';
 
 // Avatar images — require() pour le bundler
-const AVATAR_IMAGES = {
-  default: require('../../assets/avatars/animal.png'),
+const AVATAR_IMAGES: Record<string, any> = {
+  animal: require('../../assets/avatars/animal.png'),
+  cyborg: require('../../assets/avatars/cyborg.png'),
+  human: require('../../assets/avatars/human.png'),
+  elf: require('../../assets/avatars/elf.png'),
+  ghost: require('../../assets/avatars/ghost.png'),
 };
 
 const AVATAR_CHOICES = [
-  { type: 'default', emoji: '🦊', label: 'Fennec', color: '#F59E0B', hasImage: true, imageKey: 'default' as const },
-  { type: 'robot', emoji: '🤖', label: 'Robot', color: '#3B82F6', hasImage: false, imageKey: null },
-  { type: 'creature', emoji: '🐲', label: 'Créature', color: '#10B981', hasImage: false, imageKey: null },
-  { type: 'spirit', emoji: '👻', label: 'Esprit', color: '#8B5CF6', hasImage: false, imageKey: null },
-  { type: 'animal', emoji: '🦊', label: 'Animal', color: '#F59E0B', hasImage: false, imageKey: null },
-  { type: 'abstract', emoji: '🔮', label: 'Abstrait', color: '#6366F1', hasImage: false, imageKey: null },
+  { type: 'animal', emoji: '🦊', label: 'Fennec', color: '#F59E0B', hasImage: true, imageKey: 'animal' as const },
+  { type: 'robot', emoji: '🤖', label: 'Cyborg', color: '#3B82F6', hasImage: true, imageKey: 'cyborg' as const },
+  { type: 'humanoid', emoji: '🧑', label: 'Humain', color: '#EF4444', hasImage: true, imageKey: 'human' as const },
+  { type: 'creature', emoji: '🧝', label: 'Elfe', color: '#10B981', hasImage: true, imageKey: 'elf' as const },
+  { type: 'spirit', emoji: '👻', label: 'Fantôme', color: '#8B5CF6', hasImage: true, imageKey: 'ghost' as const },
+  { type: 'abstract', emoji: '✨', label: 'Abstrait', color: '#6366F1', hasImage: false, imageKey: null },
 ];
 
 export function BirthScreen() {
@@ -147,7 +151,7 @@ export function BirthScreen() {
       runHatchAnimation();
 
       // Create in background
-      await createTamadachi(name.trim());
+      await createTamadachi(name.trim(), selectedAvatar.type);
 
       // Wait for hatch to finish
       await new Promise(r => setTimeout(r, 4500));

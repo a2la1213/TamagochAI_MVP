@@ -123,7 +123,7 @@ export interface TamadachiState {
   error: string | null;
 
   initialize: () => Promise<void>;
-  createTamadachi: (name: string) => Promise<void>;
+  createTamadachi: (name: string, avatarType?: string) => Promise<void>;
   shutdown: () => Promise<void>;
   sendMessage: (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => Promise<void>;
   refreshOnResume: () => Promise<void>;
@@ -228,7 +228,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     }
   },
 
-  createTamadachi: async (name: string) => {
+  createTamadachi: async (name: string, avatarType?: string) => {
     try {
       set({ isInitializing: true, error: null });
       log.info(`🥚 Creating TamadachAI: ${name}`);
@@ -237,7 +237,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       const personality = analyzePersonality(genome);
       log.info(`Archetype: ${personality.archetype}`);
 
-      await dbCreateTamadachi(name, genome, 'robot', 'neutral', '#3B82F6');
+      await dbCreateTamadachi(name, genome, (avatarType || 'animal') as any, 'neutral', '#3B82F6');
 
       const tama = await getTamadachi();
       if (!tama) throw new Error('Failed to retrieve created TamadachAI');

@@ -241,9 +241,15 @@ export async function setApiKey(provider: LLMProviderName, key: string): Promise
 
   // Recalculer l'ordre de fallback avec le nouveau provider
   updateFallbackOrder();
+
+  // Si c'est la première clé ou pas de provider preferred, le définir
+  if (!preferredProvider || !getAvailableProviders().includes(preferredProvider)) {
+    preferredProvider = provider;
+    await setSetting('preferred_provider', provider);
+    log.info(`Auto-set preferred provider: ${provider}`);
+  }
+
   log.info(`API key set for ${provider}, available: ${getAvailableProviders().join(', ')}`);
-  updateFallbackOrder();
-  log.info(`API key set for ${provider}`);
   return true;
 }
 

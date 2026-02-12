@@ -252,7 +252,7 @@ export function ChatScreen() {
         )}
 
         {/* Typing indicator */}
-        {isGenerating && !streamingText && <TypingIndicator />}
+        {isGenerating && <TypingIndicator />}
 
         {/* Error banner */}
         {error && (

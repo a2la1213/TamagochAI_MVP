@@ -1265,6 +1265,7 @@ function mapRowToMessage(row: any): Message {
     isEdited: row.is_edited === 1,
     isRegenerated: row.is_regenerated === 1,
     createdAt: row.created_at,
+    attachments: row.attachments ? JSON.parse(row.attachments) : undefined,
   };
 }
 

@@ -35,7 +35,8 @@
         "VIBRATE",
         "WAKE_LOCK",
         "BATTERY_STATS"
-      ]
+      ],
+      "allowBackup": false
     },
     "plugins": [
       "expo-sqlite",
