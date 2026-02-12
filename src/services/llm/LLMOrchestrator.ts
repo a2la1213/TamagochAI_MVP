@@ -376,3 +376,13 @@ function generateFallbackMessage(): string {
   ];
   return messages[Math.floor(Math.random() * messages.length)];
 }
+
+
+export async function hasAnyApiKey(): Promise<boolean> {
+  const providers: LLMProviderName[] = ['gemini', 'claude', 'openai', 'deepseek', 'perplexity'];
+  for (const name of providers) {
+    const key = await getSetting(`api_key_${name}`);
+    if (key && key.trim().length > 5) return true;
+  }
+  return false;
+}

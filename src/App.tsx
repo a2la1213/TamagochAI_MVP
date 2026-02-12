@@ -9,13 +9,16 @@ import { useTamadachiStore } from './stores/useTamadachiStore';
 import { ChatScreen } from './screens/ChatScreen';
 import { BirthScreen } from './screens/BirthScreen';
 import { LoadingScreen } from './screens/LoadingScreen';
+import { ApiSetupScreen } from './screens/ApiSetupScreen';
 import { registerBackgroundTask } from './services/core/BackgroundService';
+import { hasAnyApiKey } from './services/llm/LLMOrchestrator';
 
 // Enregistrer la tâche background au boot (avant le composant)
 registerBackgroundTask();
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
+  const [needsApiSetup, setNeedsApiSetup] = useState(false);
   const initialize = useTamadachiStore(s => s.initialize);
   const tamadachi = useTamadachiStore(s => s.tamadachi);
   const isInitialized = useTamadachiStore(s => s.isInitialized);
@@ -28,6 +31,9 @@ export default function App() {
       hasInitialized.current = true;
       try {
         await initialize();
+        // Vérifier si au moins une clé API est configurée
+        const hasKey = await hasAnyApiKey();
+        setNeedsApiSetup(!hasKey);
       } catch (error) {
         console.error('Boot failed:', error);
       } finally {
@@ -67,7 +73,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      {isInitialized && tamadachi ? <ChatScreen /> : <BirthScreen />}
+      {needsApiSetup ? (
+        <ApiSetupScreen onComplete={() => setNeedsApiSetup(false)} />
+      ) : isInitialized && tamadachi ? (
+        <ChatScreen />
+      ) : (
+        <BirthScreen />
+      )}
     </SafeAreaProvider>
   );
 }
