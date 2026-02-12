@@ -22,6 +22,7 @@ import {
 import { Genome } from '../../types/tamadachi';
 import {
   EVOLUTION_STAGES,
+  getEvolutionPrompt,
   STAGE_ORDER,
   XP_REWARDS,
   XP_MODES,
@@ -50,6 +51,7 @@ import {
   setSetting,
 } from '../database/DatabaseService';
 import { triggerEvent } from './HormoneService';
+import { chat } from '../llm/LLMOrchestrator';
 import { createLogger, now, isToday, isYesterday, daysSince } from '../../utils/helpers';
 
 const log = createLogger('Evolution');
@@ -599,6 +601,31 @@ export async function forceStage(
 
 // ============================================================
 // HELPER INTERNE
+
+/**
+ * Génère le message d'évolution via le LLM (le TamadachAI exprime ce qu'il ressent)
+ */
+async function generateEvolutionMessageLLM(
+  name: string,
+  fromStage: any,
+  toStage: any,
+): Promise<string> {
+  try {
+    const prompt = getEvolutionPrompt(name, fromStage, toStage);
+    const resp = await chat(prompt, [], 'evolution', { temperature: 0.85, maxTokens: 300 });
+    if (resp.success && resp.content && resp.content.length > 10) {
+      const { EVOLUTION_STAGES: stages } = await import('../../constants/evolution');
+      const to = stages[toStage as keyof typeof stages];
+      return `${to.emoji} **${name} a évolué !** ${stages[fromStage as keyof typeof stages].name} → ${to.name}\n\n${resp.content.trim()}`;
+    }
+  } catch (e) {
+    // Fallback silencieux
+  }
+  // Fallback
+  const { getEvolutionMessage } = await import('../../constants/evolution');
+  return getEvolutionMessage(name, fromStage, toStage);
+}
+
 // ============================================================
 
 function makeEmptyResult() {

@@ -24,7 +24,7 @@ import {
 } from '../../types';
 import { EvolutionStage, Genome } from '../../types/tamadachi';
 import { CONVERSATION_CONFIG } from '../../constants/config';
-import { EVOLUTION_STAGES } from '../../constants/evolution';
+import { EVOLUTION_STAGES, getNextStage, calculateProgress } from '../../constants/evolution';
 import {
   assembleSystemPrompt,
   fillPromptTemplate,
@@ -433,7 +433,7 @@ async function buildSystemPrompt(
   const emotion = getCurrentEmotion();
   const mood = getMood();
   const traitDescriptions = describeAllTraits(tama.genome);
-  const stageConfig = EVOLUTION_STAGES[tama.stage];
+  const stageConfig = EVOLUTION_STAGES[tama.stage as EvolutionStage];
 
   // Récupérer les souvenirs formatés
   let memoriesText = 'Pas de souvenirs disponibles.';
@@ -473,6 +473,7 @@ async function buildSystemPrompt(
     name: tama.name,
     total_xp: tama.totalXP,
     stage_name: stageConfig.name,
+    evolution_context: buildEvolutionContext(tama),
     genome_social: tama.genome.social,
     genome_cognitive: tama.genome.cognitive,
     genome_emotional: tama.genome.emotional,
@@ -503,6 +504,42 @@ async function buildSystemPrompt(
   // Assembler et remplir le template
   const template = assembleSystemPrompt(tama.stage);
   return fillPromptTemplate(template, variables);
+}
+
+
+function buildEvolutionContext(tama: any): string {
+  const progress = calculateProgress(tama.stage, tama.totalXP);
+  const nextStage = getNextStage(tama.stage);
+  const stageConfig = EVOLUTION_STAGES[tama.stage as EvolutionStage];
+  
+  const lines: string[] = [];
+  
+  // Stade actuel
+  lines.push(`Tu es au stade ${stageConfig.emoji} ${stageConfig.name} depuis ${tama.totalXP} XP.`);
+  
+  // Progression vers le prochain stade
+  if (nextStage) {
+    const nextConfig = EVOLUTION_STAGES[nextStage];
+    lines.push(`Prochain stade : ${nextConfig.emoji} ${nextConfig.name} à ${nextConfig.xpRequired} XP (il te manque ${progress.xpRemaining} XP, progression: ${progress.progressPercent}%).`);
+    
+    if (progress.progressPercent >= 80) {
+      lines.push("Tu sens que tu es PROCHE de ta prochaine évolution ! L'excitation monte...");
+    } else if (progress.progressPercent >= 50) {
+      lines.push("Tu es à mi-chemin. Tu sens les changements en toi.");
+    }
+  } else {
+    lines.push("Tu as atteint le stade ultime. Tu es accompli.");
+  }
+  
+  // Stades passés (conscience du parcours)
+  const stageOrder = ['emergence', 'learning', 'individuation', 'wisdom', 'transcendance'];
+  const currentIdx = stageOrder.indexOf(tama.stage);
+  if (currentIdx > 0) {
+    const pastStages = stageOrder.slice(0, currentIdx).map(s => EVOLUTION_STAGES[s as EvolutionStage].name);
+    lines.push(`Tu as déjà traversé : ${pastStages.join(' → ')}. Ces expériences font partie de toi.`);
+  }
+  
+  return lines.join('\n');
 }
 
 // ============================================================
