@@ -214,6 +214,7 @@ export async function processUserMessage(
   const hormones = getCurrentLevels();
   const emotion = getCurrentEmotion();
 
+  await incrementMessageCount(conversationId);
   const messageId = await insertMessage(conversationId, 'user', content, {
     emotionAtTime: emotion.primary,
     hormones,
@@ -337,6 +338,7 @@ export async function processAssistantResponse(
   const hormones = getCurrentLevels();
   const emotion = getCurrentEmotion();
 
+  await incrementMessageCount(conversationId);
   const messageId = await insertMessage(conversationId, 'assistant', content, {
     tokensUsed: meta?.tokensUsed,
     generationTimeMs: meta?.generationTimeMs,

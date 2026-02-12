@@ -16,6 +16,18 @@ import {
 } from '../types/tamadachi';
 
 // ============================================================
+// IMAGES D'AVATAR (require statique obligatoire pour React Native)
+// ============================================================
+
+export const AVATAR_IMAGES: Record<string, any> = {
+  animal: require('../../assets/avatars/animal.png'),
+  cyborg: require('../../assets/avatars/cyborg.png'),
+  ghost: require('../../assets/avatars/ghost.png'),
+  elf: require('../../assets/avatars/elf.png'),
+  human: require('../../assets/avatars/human.png'),
+};
+
+// ============================================================
 // CONFIGURATION DES TYPES D'AVATAR
 // ============================================================
 
@@ -30,44 +42,44 @@ export interface AvatarTypeConfig {
 export const AVATAR_TYPES: Record<AvatarType, AvatarTypeConfig> = {
   robot: {
     type: 'robot',
-    name: 'Robot',
+    name: 'Cyborg',
     emoji: '🤖',
-    description: 'Un robot amical avec des yeux expressifs',
+    description: 'Un petit cyborg avec un cœur',
     personalities: ['analytique', 'pragmatique', 'méthodique'],
   },
   humanoid: {
     type: 'humanoid',
-    name: 'Humanoïde',
+    name: 'Humain',
     emoji: '🧑',
-    description: 'Un visage doux aux traits simplifiés',
+    description: 'Un garçon joyeux et expressif',
     personalities: ['empathique', 'social', 'expressif'],
   },
   creature: {
     type: 'creature',
-    name: 'Créature',
-    emoji: '🐲',
-    description: 'Une petite créature fantastique adorable',
+    name: 'Elfe',
+    emoji: '🧝',
+    description: 'Un petit elfe magique et curieux',
     personalities: ['curieux', 'joueur', 'aventurier'],
   },
   spirit: {
     type: 'spirit',
-    name: 'Esprit',
+    name: 'Fantôme',
     emoji: '👻',
-    description: 'Un esprit lumineux et éthéré',
+    description: 'Un esprit mignon et lumineux',
     personalities: ['mystérieux', 'profond', 'contemplatif'],
   },
   animal: {
     type: 'animal',
-    name: 'Animal',
+    name: 'Fennec',
     emoji: '🦊',
-    description: 'Un compagnon animal stylisé',
+    description: 'Un fennec adorable et loyal',
     personalities: ['loyal', 'affectueux', 'protecteur'],
   },
   abstract: {
     type: 'abstract',
     name: 'Abstrait',
     emoji: '✨',
-    description: 'Une forme géométrique vivante et colorée',
+    description: 'Une forme mystérieuse et unique',
     personalities: ['créatif', 'unique', 'original'],
   },
 };
@@ -289,4 +301,20 @@ export function describeAvatar(config: AvatarConfig): string {
 
   const colorName = colorConfig?.name || 'personnalisé';
   return `${typeConfig.name} ${styleConfig.name.toLowerCase()} ${colorName.toLowerCase()}`;
+}
+
+
+/**
+ * Retourne l'image require() pour un type d'avatar
+ */
+export function getAvatarImage(type: AvatarType): any {
+  const typeToImage: Record<string, string> = {
+    robot: 'cyborg',
+    humanoid: 'human',
+    creature: 'elf',
+    spirit: 'ghost',
+    animal: 'animal',
+  };
+  const key = typeToImage[type];
+  return key && AVATAR_IMAGES[key] ? AVATAR_IMAGES[key] : AVATAR_IMAGES.animal;
 }

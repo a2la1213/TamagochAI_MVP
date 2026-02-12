@@ -26,7 +26,7 @@ type Phase = 'input' | 'egg_idle' | 'egg_shake' | 'egg_crack' | 'hatch' | 'genom
 
 // Avatar images — require() pour le bundler
 const AVATAR_IMAGES = {
-  default: require('../../assets/avatars/avatar_default.png'),
+  default: require('../../assets/avatars/animal.png'),
 };
 
 const AVATAR_CHOICES = [

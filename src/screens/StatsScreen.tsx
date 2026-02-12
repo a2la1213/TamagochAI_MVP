@@ -15,6 +15,7 @@ import { useTamadachiData, useEvolution, useEmotion, useBattery,
 } from '../hooks';
 import { useTamadachiStore } from '../stores/useTamadachiStore';
 import { THEME } from '../constants/config';
+import { getAvatarImage } from '../constants/avatar';
 import { EVOLUTION_STAGES } from '../constants/evolution';
 import { getAllDreams, getRecentDreams } from '../services/core/DreamService';
 import { getRecentThoughts, getThoughtCount } from '../services/core/SubconsciousService';
@@ -102,7 +103,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Image
-            source={require('../../assets/avatars/avatar_default.png')}
+            source={getAvatarImage(tamadachi?.avatar?.type || 'animal')}
             style={{ width: 32, height: 32, borderRadius: 16 }}
             resizeMode="contain"
           />

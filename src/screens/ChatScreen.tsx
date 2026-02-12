@@ -30,6 +30,7 @@ import { StatsScreen } from './StatsScreen';
 import { BatteryIndicator } from '../components/common/BatteryIndicator';
 import { THEME } from '../constants/config';
 import { Message, Dream, EvolutionStage } from '../types';
+import { getAvatarImage } from '../constants/avatar';
 import { getUnsharedDream, markDreamAsShared } from '../services/core/DreamService';
 import { getAllMessages } from '../services/core/ConversationService';
 import { useTamadachiStore } from '../stores/useTamadachiStore';
@@ -38,7 +39,7 @@ type Screen = 'chat' | 'settings' | 'stats';
 
 export function ChatScreen() {
   const { messages, isGenerating, streamingText, error, sendMessage, clearError } = useChat();
-  const { name, stage } = useTamadachiData();
+  const { name, stage, avatar } = useTamadachiData();
   const { emoji: emotionEmoji } = useEmotion();
   const { percent: batteryPercent, isCharging } = useBattery();
   const flatListRef = useRef<FlatList>(null);
@@ -188,7 +189,7 @@ export function ChatScreen() {
         </View>
         <View style={styles.headerCenter}>
           <Image
-            source={require('../../assets/avatars/avatar_default.png')}
+            source={getAvatarImage(avatar?.type || 'animal')}
             style={{ width: 36, height: 36, borderRadius: 18 }}
             resizeMode="contain"
           />
