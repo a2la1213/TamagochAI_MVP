@@ -98,9 +98,12 @@ export function ConversationDrawer({ visible, onClose }: Props) {
 
   const renderConversation = ({ item }: { item: ConversationItem }) => {
     const isActive = item.is_active === 1;
-    const date = new Date(item.created_at);
+    const date = parseDate(item.created_at);
     const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const title = item.title || item.summary?.slice(0, 40) || 'Conversation sans titre';
+    let title = item.title;
+    if (!title || title === 'Nouvelle conversation') {
+      title = item.summary?.slice(0, 40) || ('Conversation du ' + date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }));
+    }
 
     return (
       <TouchableOpacity
@@ -138,7 +141,7 @@ export function ConversationDrawer({ visible, onClose }: Props) {
                 {title}
               </Text>
               <Text style={styles.convMeta}>
-                {time} · {item.message_count} msg · {getMoodEmoji(item.mood)}
+                {time} · {item.message_count || 0} msgs · {getMoodEmoji(item.mood)}
               </Text>
             </>
           )}
@@ -218,15 +221,24 @@ export function ConversationDrawer({ visible, onClose }: Props) {
 // HELPERS
 // ============================================================
 
-function getDateLabel(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+function parseDate(dateStr: string): Date {
+  if (!dateStr) return new Date();
+  // SQLite datetime('now') = '2025-02-12 14:30:00' (pas de T)
+  const fixed = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  const d = new Date(fixed);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
 
-  if (diffDays === 0) return "Aujourd'hui";
+function getDateLabel(dateStr: string): string {
+  const date = parseDate(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) return "Aujourd'hui";
   if (diffDays === 1) return 'Hier';
-  if (diffDays < 7) return `Il y a ${diffDays} jours`;
-  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaine${diffDays >= 14 ? 's' : ''}`;
+  if (diffDays < 7) return 'Il y a ' + diffDays + ' jours';
+  if (diffDays < 30) return 'Il y a ' + Math.floor(diffDays / 7) + ' semaine' + (diffDays >= 14 ? 's' : '');
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 }
 
@@ -258,13 +270,19 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   drawer: {
-    width: '80%',
+    width: '82%',
     backgroundColor: THEME.colors.background,
     borderRightWidth: 1,
     borderRightColor: THEME.colors.border,
     paddingTop: 50,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   header: {
     flexDirection: 'row',
