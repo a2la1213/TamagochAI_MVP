@@ -220,7 +220,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
                 Alert.alert('XP Mode', 'Mode Prototype (x10) activé');
               }}
             >
-              <Text style={styles.debugButtonText}>XP x10</Text>
+              <Text style={styles.debugButtonText}>XP x3</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.debugButton}
@@ -244,7 +244,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>TamadachAI MVP — v0.1.0</Text>
+          <Text style={styles.footerText}>TamadachAI</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -435,6 +435,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: THEME.colors.textSecondary,
     flexShrink: 0,
+    minWidth: 160,
     marginRight: 12,
   },
   infoValue: {
