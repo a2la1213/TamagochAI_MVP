@@ -481,11 +481,13 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 24,
     alignItems: 'center',
+    width: '100%',
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 16,
     color: THEME.colors.textSecondary,
     opacity: 0.5,
-    letterSpacing: 1,
+    letterSpacing: 2,
+    textAlign: 'center',
   },
 });

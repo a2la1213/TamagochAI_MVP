@@ -54,6 +54,7 @@ import {
   incrementTamadachiStat,
   updateTamadachi,
   upsertDailyStats,
+  getDB,
 } from '../database/DatabaseService';
 
 // Core services
@@ -303,6 +304,17 @@ export async function processUserMessage(
     evolutionMessage: null, // TODO: récupérer depuis awardMultipleXP
     streakInfo,
   };
+}
+
+// Helper: incrémenter le message_count de la conversation active
+async function incrementMessageCount(conversationId: string): Promise<void> {
+  try {
+    const db = await getDB();
+    await db.runAsync(
+      "UPDATE conversations SET message_count = message_count + 1, updated_at = datetime('now') WHERE id = ?",
+      [conversationId]
+    );
+  } catch (_) { /* ignore */ }
 }
 
 // ============================================================
