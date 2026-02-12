@@ -125,6 +125,7 @@ export interface TamadachiState {
   createTamadachi: (name: string) => Promise<void>;
   shutdown: () => Promise<void>;
   sendMessage: (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => Promise<void>;
+  refreshOnResume: () => Promise<void>;
   clearError: () => void;
   setApiKey: (provider: LLMProviderName, key: string) => Promise<boolean>;
   setPreferredProvider: (provider: LLMProviderName) => Promise<void>;
@@ -276,6 +277,27 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
   // ============================================================
   // CHAT — LE CŒUR
   // ============================================================
+
+  refreshOnResume: async () => {
+    try {
+      const tama = await getTamadachi();
+      if (!tama) return;
+
+      // Refresh batterie
+      const { getBatteryLevel, isCharging: getChargingStatus } = await import('../services/sensors/BatteryService');
+      set({ batteryLevel: getBatteryLevel(), batteryCharging: getChargingStatus() });
+
+      // Refresh messages (au cas où une notification quick-reply a ajouté un message)
+      const messages = await getActiveMessages();
+      set({ messages });
+
+      // Refresh localisation
+      const { getApproxLocation } = await import('../services/sensors/LocationService');
+      getApproxLocation().catch(() => {});
+    } catch (e) {
+      console.warn('Refresh on resume failed:', e);
+    }
+  },
 
   sendMessage: async (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => {
     const { tamadachi, isGenerating } = get();

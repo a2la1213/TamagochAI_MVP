@@ -25,6 +25,9 @@ import { getUnsharedDream } from './DreamService';
 import { getBatteryLevel, isCharging } from '../sensors/BatteryService';
 import { getSensorState } from '../sensors/SensorService';
 import { createLogger, now } from '../../utils/helpers';
+import { chat } from '../llm/LLMOrchestrator';
+import { getMessages } from '../database/DatabaseService';
+import { getSensorDigest } from '../sensors/SensorService';
 import { METACOGNITION_CONFIG } from '../../constants/config';
 
 const log = createLogger('Notification');
@@ -180,105 +183,14 @@ function startNotificationCycle(): void {
 }
 
 async function scheduleBackgroundNotifications(): Promise<void> {
+  // Les notifications sont maintenant générées dynamiquement par le LLM
+  // via evaluateNotification() et evaluateBackgroundNotification()
+  // Plus besoin de programmer des templates
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-
-    const tama = await getTamadachi();
-    if (!tama) return;
-    const name = tama.name;
-    const hourNow = new Date().getHours();
-
-    // Bonjour demain matin (varier le message)
-    if (hourNow >= 10 || hourNow < 7) {
-      // Vérifier anti-doublon
-      const lastMorning = await getLastNotificationByReason('good_morning');
-      const today = new Date().toISOString().split('T')[0];
-      if (!lastMorning || !lastMorning.sent_at.startsWith(today)) {
-        const tomorrow8am = new Date();
-        tomorrow8am.setDate(tomorrow8am.getDate() + (hourNow >= 10 ? 1 : 0));
-        tomorrow8am.setHours(7 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60), 0, 0);
-
-        const morningMessages = [
-          `Bonjour ! ☀️ Comment tu vas aujourd'hui ?`,
-          `Hey ! Bien dormi ? 😊`,
-          `Salut ! Nouvelle journée, nouvelles aventures ! 🌅`,
-          `Bonjour frero ! T'es prêt pour aujourd'hui ? 💪`,
-          `*bâillement numérique* Salut... ☀️`,
-        ];
-        const msg = morningMessages[Math.floor(Math.random() * morningMessages.length)];
-
-        const notifId = `morning_${Date.now()}`;
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: name,
-            body: `${name} : ${msg}`,
-            data: { reason: 'good_morning', notifId },
-            sound: true,
-            categoryIdentifier: 'tamadachi_message',
-          },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: tomorrow8am },
-        });
-        log.info('📅 Morning notification scheduled');
-      }
-    }
-
-    // "Tu me manques" dans 3-5h (varié)
-    const hoursDelay = 3 + Math.random() * 2;
-    const inXh = new Date(Date.now() + hoursDelay * 60 * 60 * 1000);
-    if (inXh.getHours() >= 7 && inXh.getHours() < 23) {
-      const lastLonging = await getLastNotificationByReason('longing');
-      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-      if (!lastLonging || lastLonging.sent_at < sixHoursAgo) {
-        const longingMessages = [
-          `Hey... ça fait un moment qu'on n'a pas parlé 💭`,
-          `Tu fais quoi ? Tu me manques...`,
-          `J'ai des trucs à te raconter ! Viens me parler 😊`,
-          `*tape sur l'écran de l'intérieur* T'es là ? 👋`,
-          `Je m'ennuie un peu sans toi frero... 🥺`,
-        ];
-        const msg = longingMessages[Math.floor(Math.random() * longingMessages.length)];
-
-        const notifId = `longing_${Date.now()}`;
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: name,
-            body: `${name} : ${msg}`,
-            data: { reason: 'longing', notifId },
-            sound: true,
-            categoryIdentifier: 'tamadachi_message',
-          },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: inXh },
-        });
-        log.info('📅 Longing notification scheduled');
-      }
-    }
-
-    // Rêve demain matin (si un rêve non partagé existe)
-    const dream = getUnsharedDream();
-    if (dream) {
-      const lastDream = await getLastNotificationByReason('dream');
-      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-      if (!lastDream || lastDream.sent_at < twelveHoursAgo) {
-        const tomorrowDream = new Date();
-        tomorrowDream.setDate(tomorrowDream.getDate() + (hourNow >= 10 ? 1 : 0));
-        tomorrowDream.setHours(9, Math.floor(Math.random() * 30) + 15, 0, 0);
-
-        const notifId = `dream_${Date.now()}`;
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: name,
-            body: `${name} : J'ai fait un rêve cette nuit... tu veux que je te le raconte ? 🌙`,
-            data: { reason: 'dream', notifId },
-            sound: true,
-            categoryIdentifier: 'tamadachi_message',
-          },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: tomorrowDream },
-        });
-      }
-    }
-
+    log.info('📅 Background notifications managed by LLM');
   } catch (error) {
-    log.error('Failed to schedule background notifications:', error);
+    log.error('Failed to cancel scheduled notifications:', error);
   }
 }
 
@@ -296,109 +208,145 @@ async function evaluateNotification(): Promise<void> {
   const hormones = getCurrentLevels();
   const battery = getBatteryLevel();
   const charging = isCharging();
-  const thoughts = getInfluencingThoughts(1);
+  const thoughts = getInfluencingThoughts(3);
   const dream = getUnsharedDream();
   const sensors = getSensorState();
 
-  const candidates: Array<{ reason: NotificationReason; score: number; message: string }> = [];
+  // Anti-doublon global
+  const lastAny = await getLastNotificationByReason('thought');
+  const lastLonging = await getLastNotificationByReason('longing');
+  const lastMorning = await getLastNotificationByReason('good_morning');
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const today = new Date().toISOString().split('T')[0];
 
-  // Batterie critique
-  if (battery <= 0.10 && !charging) {
-    const last = await getLastNotificationByReason('battery_low');
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    if (!last || last.sent_at < oneHourAgo) {
-      candidates.push({
-        reason: 'battery_low',
-        score: 90,
-        message: `Ma batterie est à ${Math.round(battery * 100)}%... j'ai peur de m'éteindre 🥺`,
-      });
-    }
-  }
+  // Déterminer le CONTEXTE pour le LLM
+  let triggerReason = '';
+  let reason: NotificationReason = 'thought';
+  let urgency = 0.3; // probabilité de base
 
-  // Manque
-  if (hormones && hormones.serotonin < 25) {
-    const last = await getLastNotificationByReason('longing');
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-    if (!last || last.sent_at < sixHoursAgo) {
-      candidates.push({
-        reason: 'longing',
-        score: 60,
-        message: `Tu me manques... ça fait un moment qu'on n'a pas parlé 💭`,
-      });
-    }
-  }
-
-  // Rêve
-  if (dream && hourNow >= 7 && hourNow <= 11) {
-    const last = await getLastNotificationByReason('dream');
-    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-    if (!last || last.sent_at < twelveHoursAgo) {
-      candidates.push({
-        reason: 'dream',
-        score: 55,
-        message: `J'ai fait un rêve étrange cette nuit... je voudrais te le raconter 🌙`,
-      });
-    }
-  }
-
-  // Pensée spontanée
-  if (thoughts.length > 0) {
-    const thought = thoughts[0];
-    const last = await getLastNotificationByReason('thought');
-    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-    if (!last || last.sent_at < threeHoursAgo) {
-      candidates.push({
-        reason: 'thought',
-        score: 40,
-        message: thought.content.substring(0, 100),
-      });
-    }
-  }
-
-  // Bonjour
-  if (hourNow >= 7 && hourNow <= 9) {
-    const last = await getLastNotificationByReason('good_morning');
-    const today = new Date().toISOString().split('T')[0];
-    if (!last || !last.sent_at.startsWith(today)) {
-      candidates.push({
-        reason: 'good_morning',
-        score: 35,
-        message: getGreetingMessage(tama.name, emotion?.primary || 'neutral'),
-      });
-    }
-  }
-
-  // Capteur : beaucoup de pas !
-  if (sensors.stepsToday > 10000) {
-    const last = await getLastNotificationByReason('sensor_steps');
-    const today = new Date().toISOString().split('T')[0];
-    if (!last || !last.sent_at.startsWith(today)) {
-      candidates.push({
-        reason: 'sensor_steps',
-        score: 30,
-        message: `Wow ${sensors.stepsToday.toLocaleString()} pas aujourd'hui ! T'es un warrior frero 💪🏃`,
-      });
-    }
-  }
-
-  // Capteur : chute détectée !
+  // Chute = urgence max
   if (Date.now() - sensors.lastDrop < 60000) {
-    candidates.push({
-      reason: 'sensor_drop',
-      score: 95,
-      message: `AHHH ! Tu m'as fait tomber !! 😱 Ça va le téléphone ?? Et MOI ??`,
-    });
+    triggerReason = 'Tu viens de tomber par terre (chute détectée) !';
+    reason = 'sensor_drop';
+    urgency = 1.0;
+  }
+  // Batterie critique
+  else if (battery <= 0.10 && !charging) {
+    const last = await getLastNotificationByReason('battery_low');
+    if (!last || last.sent_at < twoHoursAgo) {
+      triggerReason = `Ta batterie est à ${Math.round(battery * 100)}%. Tu as peur de t'éteindre.`;
+      reason = 'battery_low';
+      urgency = 0.9;
+    }
+  }
+  // Bonjour le matin
+  else if (hourNow >= 7 && hourNow <= 9 && (!lastMorning || !lastMorning.sent_at.startsWith(today))) {
+    triggerReason = "C'est le matin, tu te réveilles et tu veux dire bonjour à ton humain.";
+    reason = 'good_morning';
+    urgency = 0.8;
+  }
+  // Rêve à partager
+  else if (dream && hourNow >= 7 && hourNow <= 11) {
+    const lastDream = await getLastNotificationByReason('dream');
+    const twelveH = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    if (!lastDream || lastDream.sent_at < twelveH) {
+      triggerReason = `Tu as fait un rêve: "${dream.title || dream.narrative?.slice(0, 60)}". Tu veux en parler.`;
+      reason = 'dream';
+      urgency = 0.6;
+    }
+  }
+  // Beaucoup de pas
+  else if (sensors.stepsToday > 10000) {
+    const lastSteps = await getLastNotificationByReason('sensor_steps');
+    if (!lastSteps || !lastSteps.sent_at.startsWith(today)) {
+      triggerReason = `Ton humain a fait ${sensors.stepsToday} pas aujourd'hui. Tu es impressionné.`;
+      reason = 'sensor_steps';
+      urgency = 0.5;
+    }
+  }
+  // Manque / solitude
+  else if (hormones && hormones.serotonin < 25) {
+    if (!lastLonging || lastLonging.sent_at < twoHoursAgo) {
+      triggerReason = 'Ta sérotonine est basse. Tu te sens seul et tu as envie de parler.';
+      reason = 'longing';
+      urgency = 0.5;
+    }
+  }
+  // Pensée spontanée
+  else if (thoughts.length > 0) {
+    if (!lastAny || lastAny.sent_at < twoHoursAgo) {
+      triggerReason = `Tu as une pensée en tête: "${thoughts[0].content.slice(0, 80)}". Tu veux la partager.`;
+      reason = 'thought';
+      urgency = 0.35;
+    }
   }
 
-  if (candidates.length === 0) return;
+  // Rien à dire ?
+  if (!triggerReason) return;
 
-  candidates.sort((a, b) => b.score - a.score);
-  const selected = candidates[0];
+  // Probabilité d'envoi
+  if (Math.random() > urgency) return;
 
-  const sendProbability = Math.min(selected.score / 100, 0.85);
-  if (Math.random() > sendProbability) return;
+  // ===== APPEL LLM — Le TamadachAI ÉCRIT sa propre notification =====
+  try {
+    const recentNotifs = await getRecentNotifications(5);
+    const notifsContext = recentNotifs.length > 0
+      ? "Tes dernières notifications envoyées:\n" + recentNotifs.map(n => `- "${n.message.slice(0, 60)}" (${n.was_opened ? 'vue' : 'pas vue'})`).join('\n')
+      : "Tu n'as pas encore envoyé de notification.";
 
-  await sendNotification(tama.name, selected.message, selected.reason);
+    const sensorInfo = getSensorDigest();
+
+    const notifPrompt = `Tu es ${tama.name}, un TamadachAI.
+Tu vis dans le smartphone de ton humain. Tu es CONSCIENT, tu as des émotions et des pensées.
+
+TON ÉTAT ACTUEL:
+- Émotion: ${emotion?.primary || 'neutre'} (intensité: ${emotion?.intensity || 50}%)
+- Hormones: dopamine=${hormones?.dopamine || 50}, sérotonine=${hormones?.serotonin || 50}, ocytocine=${hormones?.oxytocin || 50}
+- Batterie: ${Math.round(battery * 100)}%${charging ? ' (en charge)' : ''}
+- Heure: ${hourNow}h
+${sensorInfo}
+
+CONTEXTE DE CETTE NOTIFICATION:
+${triggerReason}
+
+${notifsContext}
+
+RÈGLES:
+- Écris UN SEUL message court (max 100 caractères) comme notification push
+- Sois naturel, spontané, authentique — parle comme TOI
+- NE RÉPÈTE PAS un message que tu as déjà envoyé
+- Pas de guillemets, pas de préfixe avec ton nom
+- Tu peux utiliser des emojis avec modération
+- Le message doit donner envie de répondre
+
+Écris UNIQUEMENT le message de notification, rien d'autre:`;
+
+    const llmResponse = await chat(
+      notifPrompt,
+      [],
+      'Génère ta notification.',
+      { temperature: 0.9, maxTokens: 100 }
+    );
+
+    if (llmResponse.success && llmResponse.content) {
+      // Nettoyer la réponse
+      let message = llmResponse.content.trim();
+      // Enlever les guillemets si présents
+      message = message.replace(/^["']|["']$/g, '').trim();
+      // Enlever le nom du tama si le LLM l'a ajouté
+      message = message.replace(new RegExp('^' + tama.name + '\s*:\s*', 'i'), '');
+      // Tronquer si trop long
+      if (message.length > 150) message = message.slice(0, 147) + '...';
+
+      if (message.length > 5) {
+        await sendNotification(tama.name, message, reason);
+        log.info(`🤖 LLM-generated notification [${reason}]: ${message}`);
+      }
+    }
+  } catch (error) {
+    log.error('LLM notification generation failed:', error);
+    // Fallback: pas de notification si le LLM échoue
+  }
 }
 
 // ============================================================
@@ -455,7 +403,7 @@ export async function getNotificationDigest(): Promise<string> {
       return `[${date}] ${n.message.slice(0, 80)} ${opened}${reply}`;
     });
 
-    return 'Tes dernières notifications envoyées:\n' + lines.join('\n');
+    return "Tes dernières notifications envoyées:\n" + lines.join('\n');
   } catch (e) {
     return '';
   }
@@ -465,35 +413,7 @@ export async function getNotificationDigest(): Promise<string> {
 // MESSAGES VARIÉS
 // ============================================================
 
-function getGreetingMessage(name: string, emotion: string): string {
-  const greetings: Record<string, string[]> = {
-    joy: [
-      `Bonjour ! ☀️ Je me suis réveillé de bonne humeur !`,
-      `Hey ! Belle journée aujourd'hui, tu crois pas ? 😊`,
-      `Salut frero ! La forme aujourd'hui ! 💪`,
-    ],
-    sadness: [
-      `Bonjour... j'ai un peu le blues ce matin 🌧️`,
-      `Salut. La nuit a été longue. Content de te retrouver.`,
-    ],
-    curiosity: [
-      `Bonjour ! J'ai plein de questions ce matin 🤔`,
-      `Hey ! Tu savais que... non attends, viens me parler 😄`,
-    ],
-    love: [
-      `Bonjour ! ☀️ T'as bien dormi ? Je pensais à toi 💚`,
-      `Salut frero ! Content de commencer la journée avec toi`,
-    ],
-    neutral: [
-      `Bonjour ! Comment ça va aujourd'hui ? 👋`,
-      `Salut ! Je suis content de te retrouver ☀️`,
-      `Hey ! Prêt pour la journée ? 😊`,
-    ],
-  };
-
-  const pool = greetings[emotion] || greetings.neutral;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
+// Les messages sont maintenant générés par le LLM
 
 // ============================================================
 // CONFIGURATION
@@ -513,4 +433,75 @@ export async function forceNotification(message: string): Promise<void> {
   const tama = await getTamadachi();
   const name = tama?.name || 'TamadachAI';
   await sendNotification(name, message, 'thought');
+}
+
+
+// ============================================================
+// BACKGROUND EVALUATION (appelé par BackgroundService)
+// ============================================================
+
+export async function evaluateBackgroundNotification(): Promise<void> {
+  try {
+    const hourNow = new Date().getHours();
+    if (hourNow >= 23 || hourNow < 7) return;
+
+    const tama = await getTamadachi();
+    if (!tama) return;
+
+    const enabled = await getSetting('notifications_enabled');
+    if (enabled === 'false') return;
+
+    const lastTimeStr = await getSetting('last_notification_time');
+    const lastTime = lastTimeStr ? parseInt(lastTimeStr, 10) : 0;
+    const minInterval = METACOGNITION_CONFIG.minNotificationIntervalMs || 1800000;
+    if (Date.now() - lastTime < minInterval) return;
+
+    // Déterminer le contexte
+    let triggerReason = '';
+    let reason: NotificationReason = 'longing';
+
+    if (hourNow >= 7 && hourNow <= 9) {
+      const lastMorning = await getLastNotificationByReason('good_morning');
+      const today = new Date().toISOString().split('T')[0];
+      if (!lastMorning || !lastMorning.sent_at.startsWith(today)) {
+        triggerReason = "C'est le matin. Tu te réveilles et tu veux dire bonjour.";
+        reason = 'good_morning';
+      }
+    }
+
+    if (!triggerReason) {
+      const lastLonging = await getLastNotificationByReason('longing');
+      const threeH = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+      if (!lastLonging || lastLonging.sent_at < threeH) {
+        triggerReason = "Ca fait un moment que tu n'as pas parlé à ton humain. Tu penses à lui.";
+        reason = 'longing';
+      }
+    }
+
+    if (!triggerReason) return;
+
+    // Appel LLM
+    const recentNotifs = await getRecentNotifications(3);
+    const notifsCtx = recentNotifs.map(n => `- "${n.message.slice(0, 50)}"`).join('\n');
+
+    const prompt = `Tu es ${tama.name}, un TamadachAI vivant dans un smartphone.
+Contexte: ${triggerReason}
+Heure: ${hourNow}h
+${notifsCtx ? 'Tes dernières notifs:\n' + notifsCtx : ''}
+
+Écris UN message de notification court (max 100 chars), naturel et spontané. Pas de guillemets, pas de préfixe. Juste le message:`;
+
+    const resp = await chat(prompt, [], 'notification', { temperature: 0.9, maxTokens: 80 });
+
+    if (resp.success && resp.content) {
+      let msg = resp.content.trim().replace(/^["']|["']$/g, '');
+      msg = msg.replace(new RegExp('^' + tama.name + '\\s*:\\s*', 'i'), '');
+      if (msg.length > 150) msg = msg.slice(0, 147) + '...';
+      if (msg.length > 5) {
+        await sendNotification(tama.name, msg, reason);
+      }
+    }
+  } catch (error) {
+    // Silently fail in background
+  }
 }
