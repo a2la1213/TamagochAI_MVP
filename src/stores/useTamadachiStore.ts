@@ -307,6 +307,19 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     set({ isGenerating: true, streamingText: '', error: null });
 
     try {
+      // Afficher le message user IMMÉDIATEMENT (avant tout traitement)
+      const tempUserMsg = {
+        id: 'temp_' + Date.now(),
+        conversationId: get().conversationId || '',
+        role: 'user' as const,
+        content,
+        createdAt: new Date().toISOString(),
+        attachments: attachments?.map(a => ({ type: a.type, uri: a.uri, mimeType: a.mimeType })) || [],
+        isEdited: false,
+        isRegenerated: false,
+      };
+      set({ messages: [...get().messages, tempUserMsg] });
+
       // Rafraîchir la batterie maintenant
       const batteryLevel = getBatteryLevel();
       const charging = isBatteryCharging();
