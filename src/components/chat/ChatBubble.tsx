@@ -34,9 +34,20 @@ function ChatBubbleInner({ message, isStreaming, onEdit }: ChatBubbleProps) {
         delayLongPress={400}
         style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}
       >
-        {message.attachments && message.attachments.map((att, i) => (
-          att.type === 'image' && <Image key={i} source={{ uri: att.uri }} style={styles.attachedImage} resizeMode="cover" />
-        ))}
+        {message.attachments && message.attachments.length > 0 && (
+          <View style={styles.attachmentsContainer}>
+            {message.attachments.map((att: any, i: number) => (
+              att.type === 'image' ? (
+                <Image key={i} source={{ uri: att.uri }} style={styles.attachedImage} resizeMode="cover" />
+              ) : (
+                <View key={i} style={styles.attachedFile}>
+                  <Text style={styles.attachedFileIcon}>📄</Text>
+                  <Text style={styles.attachedFileName} numberOfLines={1}>{att.fileName || 'fichier'}</Text>
+                </View>
+              )
+            ))}
+          </View>
+        )}
         <Text selectable style={[styles.text, isUser ? styles.userText : styles.assistantText]}>
           {message.content}
           {isStreaming && <Text style={styles.cursor}>▌</Text>}
@@ -113,11 +124,30 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginLeft: 8,
   },
+  attachmentsContainer: {
+    marginBottom: 6,
+    gap: 6,
+  },
   attachedImage: {
     width: '100%',
     height: 200,
     borderRadius: 12,
-    marginBottom: 6,
+  },
+  attachedFile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    padding: 8,
+    gap: 8,
+  },
+  attachedFileIcon: {
+    fontSize: 24,
+  },
+  attachedFileName: {
+    flex: 1,
+    fontSize: 13,
+    color: '#CCC',
   },
   editButton: {
     fontSize: 11,

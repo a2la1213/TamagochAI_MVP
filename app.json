@@ -47,7 +47,8 @@
         }
       ],
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-speech-recognition"
     ],
     "jsEngine": "jsc",
     "owner": "a2lagdz",

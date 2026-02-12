@@ -5,7 +5,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Image, Alert, Modal, Pressable } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Image, Alert, Modal, Pressable, Animated } from 'react-native';
 import { THEME } from '../../constants/config';
 
 interface ChatInputProps {
@@ -14,12 +14,35 @@ interface ChatInputProps {
   placeholder?: string;
   editingMessage?: { id: string; content: string } | null;
   onCancelEdit?: () => void;
+  listening?: boolean;
+  partialText?: string;
+  onMicPress?: () => void;
+  voiceMode?: boolean;
+  onToggleVoiceMode?: () => void;
+  speaking?: boolean;
+  onStopSpeak?: () => void;
 }
 
-export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, onCancelEdit }: ChatInputProps) {
+export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, onCancelEdit, listening, partialText, onMicPress, voiceMode, onToggleVoiceMode, speaking, onStopSpeak }: ChatInputProps) {
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const micPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (listening) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(micPulse, { toValue: 1.3, duration: 500, useNativeDriver: true }),
+          Animated.timing(micPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    } else {
+      micPulse.setValue(1);
+    }
+  }, [listening]);
 
   const pickImage = useCallback(async () => {
     try {
@@ -241,10 +264,10 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
       </Modal>
       <TextInput
         ref={inputRef}
-        style={[styles.input, editingMessage ? styles.inputEditing : null]}
-        value={text}
+        style={[styles.input, editingMessage ? styles.inputEditing : null, listening ? styles.inputListening : null]}
+        value={listening ? (partialText || '') : text}
         onChangeText={setText}
-        placeholder={placeholder || 'Écris un message...'}
+        placeholder={listening ? '🎤 Je t\'écoute...' : (placeholder || 'Écris un message...')}
         placeholderTextColor={THEME.colors.textSecondary}
         multiline
         editable={!isGenerating}
@@ -256,10 +279,24 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
           <Text style={styles.cancelButtonText}>✕</Text>
         </TouchableOpacity>
       )}
+      {/* Bouton Micro */}
+      {onMicPress && (
+        <Animated.View style={{ transform: [{ scale: micPulse }] }}>
+          <TouchableOpacity
+            style={[styles.micButton, listening && styles.micButtonActive]}
+            onPress={speaking ? onStopSpeak : onMicPress}
+            disabled={isGenerating}
+          >
+            <Text style={styles.micButtonText}>{speaking ? '🔊' : (listening ? '⏹️' : '🎤')}</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      {/* Bouton Send */}
       <TouchableOpacity
-        style={[styles.sendButton, (!text.trim() || isGenerating) && styles.sendButtonDisabled]}
+        style={[styles.sendButton, (!text.trim() && !listening || isGenerating) && styles.sendButtonDisabled]}
         onPress={handleSend}
-        disabled={!text.trim() || isGenerating}
+        disabled={(!text.trim() && !listening) || isGenerating}
       >
         {isGenerating ? (
           <ActivityIndicator size="small" color="#FFFFFF" />
@@ -373,6 +410,28 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  micButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  micButtonActive: {
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+  },
+  micButtonText: {
+    fontSize: 18,
+  },
+  inputListening: {
+    borderColor: '#EF4444',
+    borderWidth: 2,
   },
   modalOverlay: {
     flex: 1,

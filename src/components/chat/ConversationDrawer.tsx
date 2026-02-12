@@ -111,7 +111,7 @@ export function ConversationDrawer({ visible, onClose }: Props) {
         onPress={() => handleSwitch(item.id)}
         onLongPress={() => {
           setEditingId(item.id);
-          setEditTitle(title);
+          setEditTitle(title || "");
         }}
       >
         <View style={styles.convLeft}>

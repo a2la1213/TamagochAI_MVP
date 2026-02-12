@@ -115,6 +115,9 @@ CREATE TABLE IF NOT EXISTS messages (
   hormone_cortisol REAL,
   hormone_adrenaline REAL,
   hormone_endorphins REAL,
+
+  -- Pièces jointes
+  attachments TEXT,
   
   -- Flags
   is_edited INTEGER NOT NULL DEFAULT 0,

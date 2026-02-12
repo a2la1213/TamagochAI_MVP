@@ -18,6 +18,8 @@ import { useChat, useTamadachiData, useEmotion, useBattery, useEvolution } from 
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
 import { ConversationDrawer } from '../components/chat/ConversationDrawer';
+import { useVoice } from '../hooks/useVoice';
+import { initVoice, isVoiceMode } from '../services/sensors/VoiceService';
 import { TypingIndicator } from '../components/chat/TypingIndicator';
 import { EmptyState } from '../components/chat/EmptyState';
 import { DreamBanner } from '../components/chat/DreamBanner';
@@ -46,6 +48,26 @@ export function ChatScreen() {
   const [activeScreen, setActiveScreen] = useState<Screen>('chat');
   const [loadingMore, setLoadingMore] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Voice
+  const handleVoiceSend = useCallback((text: string) => {
+    sendMessage(text);
+  }, [sendMessage]);
+  const voice = useVoice(handleVoiceSend);
+
+  useEffect(() => {
+    initVoice();
+  }, []);
+
+  // Auto-speak les réponses en mode vocal
+  useEffect(() => {
+    if (isVoiceMode() && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === 'assistant' && !isGenerating) {
+        voice.speakText(lastMsg.content);
+      }
+    }
+  }, [messages.length, isGenerating]);
   const allLoaded = useRef(false);
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);

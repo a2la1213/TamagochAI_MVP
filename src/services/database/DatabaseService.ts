@@ -389,6 +389,7 @@ export async function insertMessage(
     provider?: string;
     emotionAtTime?: string;
     hormones?: HormoneLevels;
+    attachments?: any[];
   },
 ): Promise<string> {
   const db = await getDB();
@@ -401,8 +402,9 @@ export async function insertMessage(
       emotion_at_time,
       hormone_dopamine, hormone_serotonin, hormone_oxytocin,
       hormone_cortisol, hormone_adrenaline, hormone_endorphins,
+      attachments,
       created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id, conversationId, role, content,
     meta?.tokensUsed || 0,
     meta?.generationTimeMs || 0,
@@ -414,6 +416,7 @@ export async function insertMessage(
     meta?.hormones?.cortisol || null,
     meta?.hormones?.adrenaline || null,
     meta?.hormones?.endorphins || null,
+    meta?.attachments ? JSON.stringify(meta.attachments) : null,
     now(),
   );
 
@@ -1372,4 +1375,13 @@ export async function createNewConversation(tamadachiId: string): Promise<string
     [id, tamadachiId, 'Nouvelle conversation']
   );
   return id;
+}
+
+
+export async function updateMessageAttachments(messageId: string, attachments: any[]): Promise<void> {
+  const db = await getDB();
+  await db.runAsync(
+    'UPDATE messages SET attachments = ? WHERE id = ?',
+    [JSON.stringify(attachments), messageId]
+  );
 }

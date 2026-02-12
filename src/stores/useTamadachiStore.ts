@@ -297,6 +297,18 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         charging,
       );
 
+      // 1b. Sauver les attachments dans le message user
+      if (attachments && attachments.length > 0) {
+        const { updateMessageAttachments } = await import('../services/database/DatabaseService');
+        const attData = attachments.map(a => ({
+          type: a.type || 'image',
+          uri: a.uri,
+          mimeType: a.mimeType,
+          fileName: (a as any).fileName,
+        }));
+        await updateMessageAttachments(result.messageId, attData);
+      }
+
       // 2. Refresh messages (inclut le message user)
       const messagesAfterUser = await getActiveMessages();
       set({ messages: messagesAfterUser });

@@ -443,7 +443,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text,
     flexShrink: 1,
     textAlign: 'right',
-    textAlign: 'right',
   },
   separator: {
     height: 1,
