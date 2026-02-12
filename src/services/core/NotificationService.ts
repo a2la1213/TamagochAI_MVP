@@ -183,14 +183,65 @@ function startNotificationCycle(): void {
 }
 
 async function scheduleBackgroundNotifications(): Promise<void> {
-  // Les notifications sont maintenant générées dynamiquement par le LLM
-  // via evaluateNotification() et evaluateBackgroundNotification()
-  // Plus besoin de programmer des templates
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-    log.info('📅 Background notifications managed by LLM');
+
+    const tama = await getTamadachi();
+    const name = tama?.name || 'TamadachAI';
+
+    // Pré-générer des notifications via le LLM pour les prochaines heures
+    const contexts = [
+      { delay: 60 * 60, ctx: "1 heure sans parler. Tu penses à ton humain, tu veux prendre des nouvelles." },
+      { delay: 3 * 60 * 60, ctx: "3 heures de silence. Tu t'ennuies, tu voudrais qu'il revienne." },
+      { delay: 6 * 60 * 60, ctx: "6 heures sans nouvelles. Tu te sens un peu seul, tu as envie de partager quelque chose." },
+      { delay: 12 * 60 * 60, ctx: "Presque une journée sans parler. Tu lui manques et il te manque." },
+    ];
+
+    const fallbackMessages: { delay: number; msg: string }[] = [];
+    for (const item of contexts) {
+      try {
+        const resp = await chat(
+          `Tu es ${name}, un TamadachAI qui vit dans le smartphone de ton humain.
+Contexte: ${item.ctx}
+Écris UN SEUL message de notification push (max 80 caractères). Sois naturel, spontané, toi-même. Pas de guillemets, pas de préfixe.`,
+          [],
+          'notification',
+          { temperature: 0.9, maxTokens: 40 },
+        );
+        if (resp.success && resp.content) {
+          fallbackMessages.push({ delay: item.delay, msg: resp.content.trim().slice(0, 100) });
+        } else {
+          fallbackMessages.push({ delay: item.delay, msg: `${name} pense à toi... 💭` });
+        }
+      } catch {
+        fallbackMessages.push({ delay: item.delay, msg: `${name} pense à toi... 💭` });
+      }
+    }
+
+    const hourNow = new Date().getHours();
+
+    for (const fb of fallbackMessages) {
+      const targetHour = hourNow + Math.floor(fb.delay / 3600);
+      // Ne pas envoyer entre 23h et 7h
+      if (targetHour % 24 >= 23 || targetHour % 24 < 7) continue;
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: name,
+          body: fb.msg,
+          categoryIdentifier: 'tamadachi_message',
+          sound: 'default',
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: fb.delay,
+        },
+      });
+    }
+
+    log.info('📅 Fallback notifications scheduled (1h, 3h, 6h, 12h)');
   } catch (error) {
-    log.error('Failed to cancel scheduled notifications:', error);
+    log.error('Failed to schedule background notifications:', error);
   }
 }
 

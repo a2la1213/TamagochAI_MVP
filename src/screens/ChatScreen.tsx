@@ -17,7 +17,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChat, useTamadachiData, useEmotion, useBattery, useEvolution } from '../hooks';
 import { ChatBubble } from '../components/chat/ChatBubble';
 import { ChatInput } from '../components/chat/ChatInput';
-import { ConversationDrawer } from '../components/chat/ConversationDrawer';
 import { useVoice } from '../hooks/useVoice';
 import { initVoice, isVoiceMode } from '../services/sensors/VoiceService';
 import { TypingIndicator } from '../components/chat/TypingIndicator';
@@ -48,7 +47,6 @@ export function ChatScreen() {
 
   const [activeScreen, setActiveScreen] = useState<Screen>('chat');
   const [loadingMore, setLoadingMore] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Voice
   const handleVoiceSend = useCallback((text: string) => {
@@ -145,24 +143,11 @@ export function ChatScreen() {
     return <StatsScreen onClose={() => setActiveScreen('chat')} />;
   }
 
-  // Messages + streaming
+  // Messages (pas de faux message streaming — on utilise le TypingIndicator)
   const displayMessages = [...messages];
-  if (streamingText && isGenerating) {
-    displayMessages.push({
-      id: 'streaming',
-      conversationId: '',
-      role: 'assistant' as const,
-      content: streamingText,
-      createdAt: new Date().toISOString(),
-      tokensUsed: 0,
-      generationTimeMs: 0,
-      isEdited: false,
-      isRegenerated: false,
-    } as Message);
-  }
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <ChatBubble message={item} onEdit={(msg) => setEditingMessage({ id: msg.id, content: msg.content })} isStreaming={item.id === 'streaming'} />
+    <ChatBubble message={item} onEdit={(msg) => setEditingMessage({ id: msg.id, content: msg.content })} />
   );
 
   const handleDreamTap = () => {
@@ -179,18 +164,13 @@ export function ChatScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => setDrawerOpen(true)}>
-            <Text style={styles.headerIcon}>☰</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={() => setActiveScreen('stats')}>
-            <Text style={styles.headerIcon}>📊</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.headerButton} onPress={() => setActiveScreen('stats')}>
+          <Text style={styles.headerIcon}>📊</Text>
+        </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Image
             source={getAvatarImage(avatar?.type || 'animal')}
-            style={{ width: 36, height: 36, borderRadius: 18 }}
+            style={{ width: 40, height: 40, borderRadius: 20 }}
             resizeMode="contain"
           />
           <Text style={styles.headerTitle}>{name}</Text>
@@ -305,7 +285,6 @@ export function ChatScreen() {
         previousStage={previousStage}
         onClose={() => setShowEvolution(false)}
       />
-      <ConversationDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </SafeAreaView>
   );
 }

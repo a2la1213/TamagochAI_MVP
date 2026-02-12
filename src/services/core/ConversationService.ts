@@ -128,45 +128,23 @@ export async function initConversation(tamadachiId: string): Promise<string> {
     // Nettoyer les conversations vides
     await cleanEmptyConversations(tamadachiId);
 
-    // Vérifier s'il y a une conversation active
+    // TOUJOURS reprendre la dernière conversation — mode WhatsApp
     const existing = await getActiveConversation(tamadachiId);
 
     if (existing) {
-      const lastMsg = await getLastMessage(existing.id);
-      
-      // Si la conversation est vide (0 messages), la réutiliser
-      if (!lastMsg || existing.messageCount === 0) {
-        activeConversationId = existing.id;
-        messageCountThisSession = 0;
-        log.info(`Reusing empty conversation: ${existing.id}`);
-        return existing.id;
-      }
-
-      const minutesSince = diffInMinutes(lastMsg.createdAt, now());
-      if (minutesSince > CONVERSATION_CONFIG.session.inactivityTimeout / (1000 * 60)) {
-        // Terminer l'ancienne conversation
-        await endConversation(existing.id, 'inactivity_timeout');
-        log.info(`Previous conversation ended (${minutesSince.toFixed(0)} min inactive)`);
-      } else {
-        // Reprendre la conversation existante
-        activeConversationId = existing.id;
-        messageCountThisSession = existing.messageCount;
-        lastMessageTime = lastMsg.createdAt;
-        log.info(`Resumed conversation: ${existing.id} (${existing.messageCount} messages)`);
-        return existing.id;
-      }
+      activeConversationId = existing.id;
+      messageCountThisSession = existing.messageCount || 0;
+      log.info(`Resumed conversation: ${existing.id} (${messageCountThisSession} msgs)`);
+      return existing.id;
     }
 
-    // Créer une nouvelle conversation
+    // Première fois — créer LA conversation unique
     const newId = await createConversation(tamadachiId);
     activeConversationId = newId;
     sessionStartTime = now();
     messageCountThisSession = 0;
-
-    // Incrémenter le compteur de conversations
     await incrementTamadachiStat(tamadachiId, 'total_conversations');
-
-    log.info(`New conversation created: ${newId}`);
+    log.info(`First conversation created: ${newId}`);
     return newId;
   } catch (error) {
     log.error('Failed to init conversation:', error);
