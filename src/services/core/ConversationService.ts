@@ -566,6 +566,37 @@ function buildEvolutionContext(tama: any): string {
   return lines.join('\n');
 }
 
+
+/**
+ * Auto-nomme la conversation via le LLM après le 1er message
+ */
+export async function autoNameConversation(conversationId: string, userMessage: string, assistantResponse: string): Promise<void> {
+  try {
+    const { chat } = await import('../llm/LLMOrchestrator');
+    const prompt = `Donne un titre COURT (3-6 mots max) pour cette conversation.
+Message humain: "${userMessage.slice(0, 100)}"
+Réponse IA: "${assistantResponse.slice(0, 100)}"
+
+Réponds UNIQUEMENT avec le titre, sans guillemets, sans ponctuation finale, sans préfixe.`;
+
+    const resp = await chat(prompt, [], 'naming', { temperature: 0.3, maxTokens: 30 });
+    if (resp.success && resp.content) {
+      let title = resp.content.trim()
+        .replace(/^["']|["']$/g, '')
+        .replace(/\.$/, '')
+        .slice(0, 60);
+      if (title.length > 2) {
+        const db = await getDB();
+        await db.runAsync('UPDATE conversations SET title = ? WHERE id = ? AND (title IS NULL OR title = ? OR title LIKE ?)',
+          [title, conversationId, 'Nouvelle conversation', 'Conversation du%']);
+        log.info(`Auto-named conversation: "${title}"`);
+      }
+    }
+  } catch (e) {
+    log.warn('Auto-naming failed:', e);
+  }
+}
+
 // ============================================================
 // GESTION DES CONVERSATIONS
 // ============================================================

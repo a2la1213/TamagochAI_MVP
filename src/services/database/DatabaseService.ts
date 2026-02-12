@@ -1401,14 +1401,20 @@ export async function updateMessageAttachments(messageId: string, attachments: a
  */
 export async function cleanEmptyConversations(tamadachiId: string): Promise<number> {
   const db = await getDB();
-  // Garder la conversation active la plus récente même si vide
+  // Garder UNE seule conversation active
   const latest = await db.getFirstAsync<any>(
     'SELECT id FROM conversations WHERE tamadachi_id = ? AND is_active = 1 ORDER BY updated_at DESC LIMIT 1',
     [tamadachiId]
   );
-  const excludeId = latest?.id || '';
+  const excludeId = latest?.id || 'none';
+  // Supprimer toutes les conversations vides sauf la dernière active
   const result = await db.runAsync(
     'DELETE FROM conversations WHERE tamadachi_id = ? AND message_count = 0 AND id != ?',
+    [tamadachiId, excludeId]
+  );
+  // Aussi désactiver les anciennes conversations actives (garder une seule)
+  await db.runAsync(
+    'UPDATE conversations SET is_active = 0 WHERE tamadachi_id = ? AND is_active = 1 AND id != ?',
     [tamadachiId, excludeId]
   );
   return result.changes;

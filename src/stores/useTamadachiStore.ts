@@ -54,6 +54,7 @@ import {
   endCurrentConversation,
   getSessionInfo,
   enrichPromptWithMetacognition,
+  autoNameConversation,
 } from '../services/core/ConversationService';
 
 // Métacognition
