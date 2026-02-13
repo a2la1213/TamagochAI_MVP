@@ -179,7 +179,6 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
               <Text style={styles.emotionEmoji}>{emoji}</Text>
               <View>
                 <Text style={styles.emotionPrimary}>{EMOTION_FR[primary] || primary}</Text>
-                <Text style={styles.emotionIntensity}>Intensité : {intensity}%</Text>
                 <View style={styles.intensityBarBg}>
                   <View style={[styles.intensityBarFill, { width: `${intensity}%`, backgroundColor: intensity > 70 ? THEME.colors.primary : intensity > 40 ? '#F5A623' : THEME.colors.textSecondary }]} />
                 </View>

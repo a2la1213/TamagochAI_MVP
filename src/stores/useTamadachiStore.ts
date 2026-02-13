@@ -389,7 +389,10 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
   sendMessage: async (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => {
     const { tamadachi, isGenerating } = get();
-    if (!tamadachi || isGenerating) return;
+    if (!tamadachi || isGenerating) {
+      log.warn('sendMessage blocked: tamadachi=' + !!tamadachi + ' isGenerating=' + isGenerating);
+      return;
+    }
 
     set({ isGenerating: true, streamingText: '', error: null });
 
@@ -500,9 +503,12 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
             Alert.alert('Erreur LLM', 'Impossible de générer une réponse. Réessaie dans quelques secondes.');
           }
         } else {
-          // Erreur non-quota — ne pas sauver le fallback
+          // Erreur non-quota — ne pas sauver le fallback  
           fullResponse = '';
-          Alert.alert('Erreur', response.error || 'Erreur de connexion au LLM');
+          log.error('LLM error (non-quota): ' + response.error);
+          log.error('Available providers: ' + getAvailableProviders().join(', '));
+          log.error('Preferred: ' + getPreferredProvider());
+          Alert.alert('Erreur LLM', (response.error || 'Erreur de connexion') + '\n\nProviders: ' + getAvailableProviders().join(', '));
         }
       }
       set({ streamingText: fullResponse || '' });
