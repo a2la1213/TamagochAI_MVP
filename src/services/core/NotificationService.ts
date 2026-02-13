@@ -80,10 +80,10 @@ export async function initNotifications(): Promise<void> {
     // Handler pour les notifications reçues
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
+        shouldShowAlert: false,  // Pas de popup en foreground
+        shouldPlaySound: false,
         shouldSetBadge: true,
-        shouldShowBanner: true,
+        shouldShowBanner: false,
         shouldShowList: true,
       }),
     });
@@ -199,7 +199,12 @@ function startNotificationCycle(): void {
 
 async function scheduleBackgroundNotifications(): Promise<void> {
   try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    // Ne garder que les notifs programmées récentes
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    if (scheduled.length > 0) {
+      log.info(`📅 ${scheduled.length} notifications already scheduled, keeping them`);
+      return;
+    }
 
     const tama = await getTamadachi();
     const name = tama?.name || 'TamadachAI';
@@ -432,7 +437,7 @@ async function sendNotification(
     await Notifications.scheduleNotificationAsync({
       content: {
         title,
-        body: `${title} : ${body}`,
+        body,
         data: { reason, notifId },
         sound: true,
         categoryIdentifier: 'tamadachi_message',

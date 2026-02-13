@@ -191,7 +191,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
       await initAllServices(tama);
       const convId = getSessionInfo().conversationId;
-      const messages = convId ? await getMessagesPaginated(convId, 30) : [];
+      const messages = convId ? await getMessagesPaginated(convId, 10) : [];
 
       set({
         tamadachi: tama,
@@ -248,7 +248,8 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       if (!tama) throw new Error('Failed to retrieve created TamadachAI');
 
       await initAllServices(tama);
-      const messages = await getAllMessages(tama.id, 50);
+      const convId2 = getSessionInfo().conversationId;
+      const messages = convId2 ? await getMessagesPaginated(convId2, 10) : [];
 
       set({
         tamadachi: tama,
@@ -293,9 +294,10 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       const { getBatteryLevel, isCharging: getChargingStatus } = await import('../services/sensors/BatteryService');
       set({ batteryLevel: getBatteryLevel(), batteryCharging: getChargingStatus() });
 
-      // Refresh messages (au cas où une notification quick-reply a ajouté un message)
-      const messages = await getActiveMessages();
-      set({ messages });
+      // Refresh messages — charger les 10 derniers
+      const convId2 = getSessionInfo().conversationId;
+      const messages = convId2 ? await getMessagesPaginated(convId2, 10) : [];
+      set({ messages, hasMoreMessages: messages.length >= 10 });
 
       // Refresh localisation
       const { getApproxLocation } = await import('../services/sensors/LocationService');
@@ -351,8 +353,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       }
 
       // 2. Refresh messages (inclut le message user)
-      const messagesAfterUser = await getActiveMessages();
-      set({ messages: messagesAfterUser });
+      // Messages déjà à jour grâce au temp message ajouté avant
 
       // 3. Enrichir le prompt avec métacognition (pensées + rêves)
       const enrichedPrompt = enrichPromptWithMetacognition(result.systemPrompt);
@@ -425,7 +426,8 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
       // 9. Refresh complet
       const updatedTama = await getTamadachi();
-      const finalMessages = tamadachi ? await getAllMessages(tamadachi.id, 50) : await getActiveMessages();
+      const convIdFinal = get().conversationId || getSessionInfo().conversationId;
+      const finalMessages = convIdFinal ? await getMessagesPaginated(convIdFinal, 10) : [];
       const newEmotion = updateEmotion();
       
       // Vibration émotionnelle
@@ -503,19 +505,20 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     const conversationId = messages[0]?.conversationId;
     if (!conversationId) return false;
 
-    const olderMessages = await getMessagesPaginated(conversationId, 30, oldestMsg.createdAt);
+    const olderMessages = await getMessagesPaginated(conversationId, 10, oldestMsg.createdAt);
     if (olderMessages.length === 0) {
       set({ hasMoreMessages: false });
       return false;
     }
 
-    set({ messages: [...olderMessages, ...messages], hasMoreMessages: olderMessages.length >= 30 });
+    set({ messages: [...olderMessages, ...messages], hasMoreMessages: olderMessages.length >= 10 });
     return true;
   },
 
   refreshMessages: async () => {
     const tama = get().tamadachi;
-    const messages = tama ? await getAllMessages(tama.id, 50) : await getActiveMessages();
+    const convId3 = tama ? getSessionInfo().conversationId : null;
+    const messages = convId3 ? await getMessagesPaginated(convId3, 10) : [];
     set({ messages });
   },
 
