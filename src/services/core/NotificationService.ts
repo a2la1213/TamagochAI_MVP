@@ -137,9 +137,9 @@ export async function initNotifications(): Promise<void> {
             log.warn('Failed to save quick reply in DB:', e);
           }
 
-          if (onQuickReply) {
-            onQuickReply(userInput);
-          }
+          // Ne PAS appeler onQuickReply en background (le pipeline LLM ne marche pas)
+          // Le message est déjà sauvé en DB, il sera visible au prochain refresh
+          log.info('Quick reply saved in DB, will appear on next app open');
         }
       }
     });

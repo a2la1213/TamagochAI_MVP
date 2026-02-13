@@ -19,6 +19,20 @@ import {
 import { LLM_CONFIG } from '../../../constants/config';
 import { createLogger } from '../../../utils/helpers';
 
+const FETCH_TIMEOUT = 30000; // 30s max par requête
+
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
 // Timeout compatible JSC (pas de AbortSignal.timeout en React Native)
 function createTimeout(ms: number): { signal: AbortSignal; clear: () => void } {
   const controller = new AbortController();
@@ -60,7 +74,7 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
   async isAvailable(): Promise<boolean> {
     if (!this.config.apiKey || this.config.apiKey.length < 10) return false;
     try {
-      const response = await fetch(`${this.config.apiBase}/chat/completions`, {
+      const response = await fetchWithTimeout(`${this.config.apiBase}/chat/completions`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -83,7 +97,7 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
 
       this.log.info(`Sending request — Model: ${this.config.model}, Messages: ${(request.messages.length + 2)}`);
 
-      const response = await fetch(`${this.config.apiBase}/chat/completions`, {
+      const response = await fetchWithTimeout(`${this.config.apiBase}/chat/completions`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(body),
@@ -124,7 +138,7 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
     try {
       const body = { ...this.buildRequestBody(request), stream: true };
 
-      const response = await fetch(`${this.config.apiBase}/chat/completions`, {
+      const response = await fetchWithTimeout(`${this.config.apiBase}/chat/completions`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(body),

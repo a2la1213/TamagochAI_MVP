@@ -266,7 +266,14 @@ export function ChatScreen() {
         <ChatInput
           initialText={draftRef.current}
           onTextChange={(t: string) => { draftRef.current = t; }}
-          onSend={(msg, atts) => { sendMessage(msg, atts); setEditingMessage(null); }}
+          onSend={(msg, atts) => {
+            if (editingMessage) {
+              useTamadachiStore.getState().editAndResend(editingMessage.id, msg);
+              setEditingMessage(null);
+            } else {
+              sendMessage(msg, atts);
+            }
+          }}
           isGenerating={isGenerating}
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}

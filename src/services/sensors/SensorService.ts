@@ -81,7 +81,11 @@ let pedometerSub: any = null;
 // INITIALISATION
 // ============================================================
 
+let sensorInitialized = false;
+
 export async function initSensors(): Promise<void> {
+  if (sensorInitialized) return;
+  sensorInitialized = true;
   try {
     // 1. PODOMÈTRE
     const pedoAvailable = await Pedometer.isAvailableAsync();

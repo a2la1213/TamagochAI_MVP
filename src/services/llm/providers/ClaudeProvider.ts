@@ -17,6 +17,20 @@ import {
 import { LLM_CONFIG } from '../../../constants/config';
 import { createLogger } from '../../../utils/helpers';
 
+const FETCH_TIMEOUT = 30000; // 30s max par requête
+
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
 // Timeout compatible JSC (pas de AbortSignal.timeout en React Native)
 function createTimeout(ms: number): { signal: AbortSignal; clear: () => void } {
   const controller = new AbortController();
@@ -53,7 +67,7 @@ export class ClaudeProvider implements LLMProviderInstance {
     if (!this.apiKey || this.apiKey.length < 10) return false;
     try {
       // Petit appel de test avec max_tokens minimal
-      const response = await fetch(CLAUDE_API_BASE, {
+      const response = await fetchWithTimeout(CLAUDE_API_BASE, {
         method: 'POST',
         headers: {
           'x-api-key': this.apiKey,
@@ -80,7 +94,7 @@ export class ClaudeProvider implements LLMProviderInstance {
 
       log.info(`Sending request — Model: ${this.model}, Messages: ${(request.messages.length + 2)}`);
 
-      const response = await fetch(CLAUDE_API_BASE, {
+      const response = await fetchWithTimeout(CLAUDE_API_BASE, {
         method: 'POST',
         headers: {
           'x-api-key': this.apiKey,
@@ -125,7 +139,7 @@ export class ClaudeProvider implements LLMProviderInstance {
     try {
       const body = { ...this.buildRequestBody(request), stream: true };
 
-      const response = await fetch(CLAUDE_API_BASE, {
+      const response = await fetchWithTimeout(CLAUDE_API_BASE, {
         method: 'POST',
         headers: {
           'x-api-key': this.apiKey,

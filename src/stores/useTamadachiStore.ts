@@ -19,6 +19,8 @@ import {
   createTamadachi as dbCreateTamadachi,
   setSetting,
   getMessagesPaginated,
+  updateMessageContent,
+  deleteMessagesAfter,
 } from '../services/database/DatabaseService';
 
 // Core
@@ -103,6 +105,9 @@ import { createLogger } from '../utils/helpers';
 
 const log = createLogger('Store');
 
+let batteryIntervalId: ReturnType<typeof setInterval> | null = null;
+let isStoreInitialized = false;
+
 // ============================================================
 // TYPES
 // ============================================================
@@ -127,6 +132,7 @@ export interface TamadachiState {
   initialize: () => Promise<void>;
   createTamadachi: (name: string, avatarType?: string) => Promise<void>;
   shutdown: () => Promise<void>;
+  editAndResend: (messageId: string, newContent: string) => Promise<void>;
   sendMessage: (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => Promise<void>;
   refreshOnResume: () => Promise<void>;
   clearError: () => void;
@@ -209,17 +215,21 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       initSensors().catch(() => {});
 
       // Connecter les réponses rapides aux notifications
-      setQuickReplyHandler((text: string) => {
-        get().sendMessage(text);
-      });
-
-      // Rafraîchir la batterie toutes les 30s
-      setInterval(() => {
-        set({
-          batteryLevel: getBatteryLevel(),
-          batteryCharging: isBatteryCharging(),
+      if (!isStoreInitialized) {
+        setQuickReplyHandler((text: string) => {
+          get().sendMessage(text);
         });
-      }, 30000);
+
+        // Rafraîchir la batterie toutes les 60s
+        if (batteryIntervalId) clearInterval(batteryIntervalId);
+        batteryIntervalId = setInterval(() => {
+          set({
+            batteryLevel: getBatteryLevel(),
+            batteryCharging: isBatteryCharging(),
+          });
+        }, 60000);
+        isStoreInitialized = true;
+      }
 
       set({
         isInitializing: false,
@@ -307,11 +317,44 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     }
   },
 
+  editAndResend: async (messageId: string, newContent: string) => {
+    const { tamadachi, isGenerating, conversationId } = get();
+    if (!tamadachi || isGenerating) return;
+
+    try {
+      // 1. Modifier le message original
+      await updateMessageContent(messageId, newContent);
+      
+      // 2. Supprimer les messages après (réponse LLM)
+      if (conversationId) {
+        await deleteMessagesAfter(messageId, conversationId);
+      }
+
+      // 3. Recharger les messages
+      const convId = conversationId || getSessionInfo().conversationId;
+      const messages = convId ? await getMessagesPaginated(convId, 10) : [];
+      set({ messages });
+
+      // 4. Regénérer la réponse avec le nouveau contenu
+      await get().sendMessage(newContent);
+    } catch (error: any) {
+      log.error('Edit failed:', error);
+    }
+  },
+
   sendMessage: async (content: string, attachments?: Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>) => {
     const { tamadachi, isGenerating } = get();
     if (!tamadachi || isGenerating) return;
 
     set({ isGenerating: true, streamingText: '', error: null });
+
+    // Safety: forcer isGenerating à false après 90s
+    const generatingTimeout = setTimeout(() => {
+      if (get().isGenerating) {
+        log.warn('⚠️ isGenerating stuck for 90s, forcing reset');
+        set({ isGenerating: false, streamingText: '' });
+      }
+    }, 90000);
 
     try {
       // Afficher le message user IMMÉDIATEMENT (avant tout traitement)
@@ -392,12 +435,11 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         fullResponse = response.content;
         log.info(`LLM response from ${response.provider}/${response.model} — ${response.tokensUsed} tokens, ${response.latencyMs}ms`);
       } else {
-        fullResponse = response.content; // fallback message
         log.error(`LLM failed: ${response.error}`);
-        // Erreur user-friendly pour quota — retry auto après 3s
+        // Retry auto pour quota
         if (response.error?.includes('429') || response.error?.includes('quota')) {
-          log.warn('Quota hit, retrying in 3s...');
-          await new Promise(r => setTimeout(r, 3000));
+          log.warn('Quota hit, retrying in 5s...');
+          await new Promise(r => setTimeout(r, 5000));
           const retryResponse = await chat(
             enrichedPrompt,
             chatHistory.slice(0, -1),
@@ -408,11 +450,17 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
             fullResponse = retryResponse.content;
             log.info('Retry succeeded!');
           } else {
-            Alert.alert('Quota dépassé', 'Attends quelques secondes et réessaie.');
+            // Ne PAS sauver le fallback — juste notifier l'utilisateur
+            fullResponse = '';
+            Alert.alert('Erreur LLM', 'Impossible de générer une réponse. Réessaie dans quelques secondes.');
           }
+        } else {
+          // Erreur non-quota — ne pas sauver le fallback
+          fullResponse = '';
+          Alert.alert('Erreur', response.error || 'Erreur de connexion au LLM');
         }
       }
-      set({ streamingText: fullResponse });
+      set({ streamingText: fullResponse || '' });
 
       // 8. Stocker la réponse
       if (fullResponse) {
@@ -435,6 +483,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         vibrateForEmotion(newEmotion.primary);
       }
 
+      clearTimeout(generatingTimeout);
       set({
         tamadachi: updatedTama,
         messages: finalMessages,
@@ -453,6 +502,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       }
     } catch (error: any) {
       log.error('❌ Send message failed:', error);
+      clearTimeout(generatingTimeout);
       set({ isGenerating: false, streamingText: '', error: `Erreur: ${error.message}` });
     }
   },

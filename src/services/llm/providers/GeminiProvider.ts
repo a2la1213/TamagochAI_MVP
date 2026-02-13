@@ -20,6 +20,20 @@ import {
 import { LLM_CONFIG } from '../../../constants/config';
 import { createLogger, now } from '../../../utils/helpers';
 
+const FETCH_TIMEOUT = 30000; // 30s max par requête
+
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
 // Timeout compatible JSC (pas de AbortSignal.timeout en React Native)
 function createTimeout(ms: number): { signal: AbortSignal; clear: () => void } {
   const controller = new AbortController();
@@ -67,7 +81,7 @@ export class GeminiProvider implements LLMProviderInstance {
     if (!this.apiKey || this.apiKey.length < 10) return false;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${GEMINI_API_BASE}/models/${this.model}?key=${this.apiKey}`,
         { method: 'GET' },
       );
@@ -90,7 +104,7 @@ export class GeminiProvider implements LLMProviderInstance {
       log.info(`Sending request — Model: ${this.model}, Messages: ${(request.messages.length + 2)}`);
 
       // Appel HTTP
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${GEMINI_API_BASE}/models/${this.model}:generateContent?key=${this.apiKey}`,
         {
           method: 'POST',
@@ -143,7 +157,7 @@ export class GeminiProvider implements LLMProviderInstance {
     try {
       const body = this.buildRequestBody(request);
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${GEMINI_API_BASE}/models/${this.model}:streamGenerateContent?alt=sse&key=${this.apiKey}`,
         {
           method: 'POST',

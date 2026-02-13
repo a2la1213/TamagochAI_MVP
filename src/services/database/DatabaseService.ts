@@ -1425,6 +1425,19 @@ export async function updateMessageAttachments(messageId: string, attachments: a
   );
 }
 
+export async function updateMessageContent(messageId: string, content: string): Promise<void> {
+  const db = await getDB();
+  await db.runAsync('UPDATE messages SET content = ?, is_edited = 1 WHERE id = ?', [content, messageId]);
+}
+
+export async function deleteMessagesAfter(messageId: string, conversationId: string): Promise<void> {
+  const db = await getDB();
+  const msg = await db.getFirstAsync<any>('SELECT created_at FROM messages WHERE id = ?', [messageId]);
+  if (msg) {
+    await db.runAsync('DELETE FROM messages WHERE conversation_id = ? AND created_at > ?', [conversationId, msg.created_at]);
+  }
+}
+
 /**
  * Supprime les conversations vides (sauf la plus récente)
  */

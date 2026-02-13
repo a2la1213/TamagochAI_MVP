@@ -227,7 +227,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
               <View key={dream.id} style={styles.dreamCard}>
                 <View style={styles.dreamHeader}>
                   <Text style={styles.dreamTitle} numberOfLines={2}>{dream.title}</Text>
-                  {dream.wasShared && <Text style={styles.dreamShared}>raconté ✓</Text>}
+                  {dream.wasShared && <Text style={styles.dreamShared} numberOfLines={1}>raconté ✓</Text>}
                 </View>
                 <Text selectable style={styles.dreamNarrative}>
                   {dream.narrative}
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     flexShrink: 1, flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   dreamTitle: {
     flex: 1, fontSize: 15, fontWeight: '600', color: THEME.colors.text },
-  dreamShared: { fontSize: 11, color: THEME.colors.success },
+  dreamShared: { fontSize: 11, color: THEME.colors.success, minWidth: 65, textAlign: 'right' },
   dreamNarrative: { fontSize: 13, color: THEME.colors.textSecondary, lineHeight: 20, fontStyle: 'italic', flexShrink: 0 },
   dreamDate: { fontSize: 11, color: THEME.colors.textSecondary, marginTop: 6, opacity: 0.6 },
 

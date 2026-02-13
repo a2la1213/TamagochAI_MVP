@@ -123,7 +123,9 @@ export async function chat(
 ): Promise<LLMResponse> {
   ensureInitialized();
 
-  const messages: LLMMessage[] = chatHistory.map(m => ({
+  // Limiter l'historique pour éviter le token overflow
+  const recentHistory = chatHistory.slice(-10);
+  const messages: LLMMessage[] = recentHistory.map(m => ({
     role: m.role as 'user' | 'assistant' | 'system',
     content: m.content,
     attachments: m.attachments,
