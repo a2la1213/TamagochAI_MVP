@@ -233,38 +233,37 @@ async function attemptWithRetry(
 // ============================================================
 
 export async function setApiKey(provider: LLMProviderName, key: string): Promise<boolean> {
-  // S'assurer que les providers sont instanciés même si initLLM n'a pas fini
+  // S'assurer que les providers sont instanciés
   if (providers.size === 0) {
     providers.set('gemini', new GeminiProvider());
     providers.set('claude', new ClaudeProvider());
     providers.set('openai', createOpenAIProvider());
     providers.set('deepseek', createDeepSeekProvider());
     providers.set('perplexity', createPerplexityProvider());
+    log.info('Providers instantiated via setApiKey');
   }
 
   const instance = providers.get(provider);
-  if (!instance) return false;
-
-  instance.setApiKey(key);
-
-  // On sauvegarde directement — la validation se fera au premier appel
-  await setSetting(`api_key_${provider}`, key);
-
-  // Recalculer l'ordre de fallback avec le nouveau provider
-  updateFallbackOrder();
-
-  // Marquer comme initialisé si les providers existent
-  if (!isInitialized && providers.size > 0) {
-    isInitialized = true;
-    log.info('LLM auto-initialized via setApiKey');
+  if (!instance) {
+    log.error(`Provider ${provider} not found`);
+    return false;
   }
 
-  // Forcer ce provider comme preferred s'il est le seul configuré
+  // Sauver la clé
+  instance.setApiKey(key);
+  await setSetting(`api_key_${provider}`, key);
+
+  // Forcer ce provider comme preferred
   preferredProvider = provider;
   await setSetting('preferred_provider', provider);
+
+  // Mettre à jour le fallback
   updateFallbackOrder();
 
-  log.info(`API key set for ${provider}, preferred: ${preferredProvider}, fallback: ${fallbackOrder.join(',')}`);
+  // Marquer comme initialisé
+  isInitialized = true;
+
+  log.info(`✅ API key set for ${provider}, preferred: ${preferredProvider}, fallback: [${fallbackOrder.join(',')}], available: [${getAvailableProviders().join(',')}]`);
   return true;
 }
 
@@ -290,8 +289,9 @@ export function getPreferredProvider(): LLMProviderName {
 }
 
 export function getAvailableProviders(): LLMProviderName[] {
+  // SYNC check — juste vérifier si la clé existe (pas de network call)
   return Array.from(providers.entries())
-    .filter(([_, p]) => p.isAvailable())
+    .filter(([_, p]) => !!p.getApiKey())
     .map(([name]) => name);
 }
 
@@ -329,8 +329,16 @@ export function getLLMStats(): LLMStats {
 
 function ensureInitialized(): void {
   if (!isInitialized) {
-    log.warn('LLM not initialized, calling initLLM...');
-    // Sync fallback — real init should be called before
+    log.warn('LLM not initialized — forcing provider instantiation');
+    if (providers.size === 0) {
+      providers.set('gemini', new GeminiProvider());
+      providers.set('claude', new ClaudeProvider());
+      providers.set('openai', createOpenAIProvider());
+      providers.set('deepseek', createDeepSeekProvider());
+      providers.set('perplexity', createPerplexityProvider());
+    }
+    updateFallbackOrder();
+    isInitialized = true;
   }
 }
 

@@ -185,6 +185,16 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       log.info('✅ Database ready');
 
       // Initialiser le LLM tôt (nécessaire pour configurer les clés API sur BirthScreen)
+      // Demander toutes les permissions au démarrage
+      try {
+        const { requestForegroundPermissionsAsync } = await import('expo-location');
+        await requestForegroundPermissionsAsync().catch(() => {});
+      } catch (e) { /* optional */ }
+      try {
+        const Notifications = await import('expo-notifications');
+        await Notifications.requestPermissionsAsync().catch(() => {});
+      } catch (e) { /* optional */ }
+
       try { await initLLM(); } catch (e) { console.warn('LLM early init:', e); }
       log.info('✅ LLM ready');
 
@@ -322,24 +332,58 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     const { tamadachi, isGenerating, conversationId } = get();
     if (!tamadachi || isGenerating) return;
 
+    set({ isGenerating: true, streamingText: '', error: null });
+
+    const generatingTimeout = setTimeout(() => {
+      if (get().isGenerating) {
+        set({ isGenerating: false, streamingText: '' });
+      }
+    }, 90000);
+
     try {
-      // 1. Modifier le message original
+      // 1. Modifier le message original en DB
       await updateMessageContent(messageId, newContent);
       
-      // 2. Supprimer les messages après (réponse LLM)
-      if (conversationId) {
-        await deleteMessagesAfter(messageId, conversationId);
+      // 2. Supprimer la réponse LLM qui suivait
+      const convId = conversationId || getSessionInfo().conversationId;
+      if (convId) {
+        await deleteMessagesAfter(messageId, convId);
       }
 
-      // 3. Recharger les messages
-      const convId = conversationId || getSessionInfo().conversationId;
+      // 3. Recharger les messages (avec le message modifié)
       const messages = convId ? await getMessagesPaginated(convId, 10) : [];
       set({ messages });
 
-      // 4. Regénérer la réponse avec le nouveau contenu
-      await get().sendMessage(newContent);
+      // 4. Regénérer la réponse LLM
+      const result = await processUserMessage(tamadachi.id, newContent, getBatteryLevel(), isBatteryCharging());
+      const enrichedPrompt = enrichPromptWithMetacognition(result.systemPrompt);
+      const chatHistory = await getFormattedChatHistory(20);
+      const temperature = getIdealTemperature(tamadachi.genome, tamadachi.stage);
+      const maxTokens = getIdealMaxTokens(tamadachi.genome, tamadachi.stage);
+
+      set({ streamingText: '...' });
+
+      const response = await chat(enrichedPrompt, chatHistory.slice(0, -1), newContent, { temperature, maxTokens });
+
+      let fullResponse = '';
+      if (response.success) {
+        fullResponse = response.content;
+      }
+
+      if (fullResponse && convId) {
+        await processAssistantResponse(tamadachi.id, convId, fullResponse, { provider: getPreferredProvider() });
+        const updated = await getMessagesPaginated(convId, 10);
+        clearTimeout(generatingTimeout);
+        set({ messages: updated, isGenerating: false, streamingText: '' });
+      } else {
+        clearTimeout(generatingTimeout);
+        set({ isGenerating: false, streamingText: '' });
+        Alert.alert('Erreur', 'Impossible de regénérer la réponse.');
+      }
     } catch (error: any) {
+      clearTimeout(generatingTimeout);
       log.error('Edit failed:', error);
+      set({ isGenerating: false, streamingText: '', error: error.message });
     }
   },
 
