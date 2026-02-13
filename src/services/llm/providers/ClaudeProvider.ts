@@ -64,27 +64,9 @@ export class ClaudeProvider implements LLMProviderInstance {
   }
 
   async isAvailable(): Promise<boolean> {
-    if (!this.apiKey || this.apiKey.length < 10) return false;
-    try {
-      // Petit appel de test avec max_tokens minimal
-      const response = await fetchWithTimeout(CLAUDE_API_BASE, {
-        method: 'POST',
-        headers: {
-          'x-api-key': this.apiKey,
-          'anthropic-version': ANTHROPIC_VERSION,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 10,
-          messages: [{ role: 'user', content: 'ping' }],
-        }),
-      });
-      return response.ok || response.status === 429; // 429 = rate limited mais clé valide
-    } catch {
-      return false;
-    }
+    return !!this.apiKey && this.apiKey.length >= 10;
   }
+
 
   async generate(request: LLMRequest): Promise<LLMResponse> {
     const startTime = Date.now();

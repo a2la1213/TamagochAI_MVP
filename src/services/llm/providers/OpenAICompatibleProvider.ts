@@ -71,23 +71,10 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
     return this.config.apiKey || null;
   }
 
-  async isAvailable(): Promise<boolean> {
-    if (!this.config.apiKey || this.config.apiKey.length < 10) return false;
-    try {
-      const response = await fetchWithTimeout(`${this.config.apiBase}/chat/completions`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({
-          model: this.config.model,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 5,
-        }),
-      });
-      return response.ok || response.status === 429;
-    } catch {
-      return false;
-    }
+    async isAvailable(): Promise<boolean> {
+    return !!this.config.apiKey && this.config.apiKey.length >= 10;
   }
+
 
   async generate(request: LLMRequest): Promise<LLMResponse> {
     const startTime = Date.now();

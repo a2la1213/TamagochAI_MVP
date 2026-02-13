@@ -166,8 +166,8 @@ export const LLM_CONFIG = {
 
   // Timeout et retry
   timeout: 60000,         // 30 secondes
-  maxRetries: 2,
-  retryDelay: 1000,       // 1 seconde entre retries
+  maxRetries: 0,  // Pas de retry auto (géré par le provider + store)
+  retryDelay: 5000,       // 1 seconde entre retries
 } as const;
 
 // ============================================================

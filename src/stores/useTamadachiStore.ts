@@ -364,7 +364,11 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
       set({ streamingText: '⏳ Réflexion...' });
 
-      const response = await chat(enrichedPrompt, chatHistory.slice(0, -1), newContent, { temperature, maxTokens });
+      const editChatPromise = chat(enrichedPrompt, chatHistory.slice(0, -1), newContent, { temperature, maxTokens });
+      const editTimeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Edit timeout 65s')), 65000)
+      );
+      const response = await Promise.race([editChatPromise, editTimeoutPromise]);
 
       let fullResponse = '';
       if (response.success) {
@@ -505,9 +509,10 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       } else {
         log.error(`LLM failed: ${response.error}`);
         // Retry auto pour quota
-        if (response.error?.includes('429') || response.error?.includes('quota')) {
-          log.warn('Quota hit, retrying in 5s...');
-          await new Promise(r => setTimeout(r, 5000));
+        if (response.error?.includes('429') || response.error?.includes('quota') || response.error?.includes('Resource has been exhausted')) {
+          log.warn('Quota/rate limit hit, retrying in 15s...');
+          set({ streamingText: '⏳ Rate limit... retry dans 15s' });
+          await new Promise(r => setTimeout(r, 15000));
           const retryResponse = await chat(
             enrichedPrompt,
             chatHistory.slice(0, -1),
@@ -710,11 +715,12 @@ async function initAllServices(tama: Tamadachi): Promise<void> {
   await initDreams();
   log.info('✅ Dreams');
 
-  await generateDream(tama.id);
-
-  await startSubconscious(tama.id);
-  log.info('✅ Subconscious');
-
-  await initNotifications();
-  log.info('✅ Notifications');
+  // Délayer les services gourmands en LLM (évite 429 au démarrage)
+  log.info('⏳ Background services (dream, subconscious, notifications) delayed 3min...');
+  setTimeout(async () => {
+    try { await generateDream(tama.id); log.info('🌙 Dream generated'); } catch (e) { log.warn('Dream failed:', e); }
+    try { await startSubconscious(tama.id); log.info('🧠 Subconscious started'); } catch (e) { log.warn('Subconscious failed:', e); }
+    try { await initNotifications(); log.info('🔔 Notifications started'); } catch (e) { log.warn('Notifications failed:', e); }
+  }, 3 * 60 * 1000);
+  log.info('✅ Init complete (background in 3min)');
 }

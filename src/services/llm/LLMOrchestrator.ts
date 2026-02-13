@@ -254,40 +254,13 @@ export async function setApiKey(provider: LLMProviderName, key: string): Promise
     return false;
   }
 
-  // Tester la clé avec un appel rapide (10s max)
-  instance.setApiKey(key);
-  
-  try {
-    const testPromise = instance.generate({
-      systemPrompt: 'Reply with just: OK',
-      messages: [],
-      userMessage: 'test',
-      temperature: 0,
-      maxTokens: 5,
-      topP: 1,
-      userAttachments: [],
-    });
-    const timeoutPromise = new Promise<any>((_, reject) => 
-      setTimeout(() => reject(new Error('Validation timeout')), 10000)
-    );
-    const testResponse = await Promise.race([testPromise, timeoutPromise]);
-    
-    if (!testResponse.success) {
-      // Si c'est une erreur 401/403 → clé invalide
-      if (testResponse.error?.includes('401') || testResponse.error?.includes('403') || testResponse.error?.includes('invalid')) {
-        log.error(`API key invalid for ${provider}: ${testResponse.error}`);
-        instance.setApiKey('');
-        return false;
-      }
-      // Autre erreur (rate limit, etc.) → accepter la clé quand même
-      log.warn(`API key test had error but accepting: ${testResponse.error}`);
-    } else {
-      log.info(`✅ API key validated for ${provider}`);
-    }
-  } catch (e: any) {
-    // Timeout ou erreur réseau → accepter la clé (sera testée au premier message)
-    log.warn(`API key validation timeout/error for ${provider}: ${e.message} — accepting key anyway`);
+  // Validation format seulement (pas d'appel réseau pour économiser le quota)
+  if (!key || key.trim().length < 10) {
+    log.error(`API key too short for ${provider}`);
+    return false;
   }
+  instance.setApiKey(key.trim());
+  log.info(`✅ API key saved for ${provider} (format OK, ${key.trim().length} chars)`);
 
   await setSetting(`api_key_${provider}`, key);
 

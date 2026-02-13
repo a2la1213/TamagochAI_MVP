@@ -40,6 +40,8 @@ const log = createLogger('Notification');
 
 let isEnabled = true;
 let lastNotificationTime = 0;
+const notifStartTime = Date.now();
+const NOTIF_LLM_DELAY = 5 * 60 * 1000; // 5 min avant d'utiliser le LLM pour les notifs
 let notificationCheckInterval: ReturnType<typeof setInterval> | null = null;
 let responseListener: any = null;
 let receivedListener: any = null;
@@ -220,6 +222,11 @@ async function scheduleBackgroundNotifications(): Promise<void> {
     const fallbackMessages: { delay: number; msg: string }[] = [];
     for (const item of contexts) {
       try {
+        // Ne pas appeler le LLM dans les 5 premières minutes (évite 429)
+        if (Date.now() - notifStartTime < NOTIF_LLM_DELAY) {
+          log.info('⏳ Skipping LLM for notification (too early, < 5min)');
+          return;
+        }
         const llmPromise = chat(
           `Tu es ${name}, un TamadachAI qui vit dans le smartphone de ton humain.
 Contexte: ${item.ctx}
@@ -394,6 +401,11 @@ RÈGLES:
 
 Écris UNIQUEMENT le message de notification, rien d'autre:`;
 
+    // Ne pas appeler le LLM trop tôt
+    if (Date.now() - notifStartTime < NOTIF_LLM_DELAY) {
+      log.info('⏳ Skipping scheduled notification LLM (too early)');
+      return;
+    }
     const llmResponse = await chat(
       notifPrompt,
       [],
@@ -580,6 +592,10 @@ ${notifsCtx ? 'Tes dernières notifs:\n' + notifsCtx : ''}
 
 Écris UN message de notification court (max 100 chars), naturel et spontané. Pas de guillemets, pas de préfixe. Juste le message:`;
 
+    if (Date.now() - notifStartTime < NOTIF_LLM_DELAY) {
+      log.info('⏳ Skipping notification LLM (too early)');
+      return { success: false, content: '' } as any;
+    }
     const resp = await chat(prompt, [], 'notification', { temperature: 0.9, maxTokens: 80 });
 
     if (resp.success && resp.content) {

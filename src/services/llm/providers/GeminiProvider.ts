@@ -77,19 +77,11 @@ export class GeminiProvider implements LLMProviderInstance {
     return this.apiKey || null;
   }
 
-  async isAvailable(): Promise<boolean> {
-    if (!this.apiKey || this.apiKey.length < 10) return false;
-
-    try {
-      const response = await fetchWithTimeout(
-        `${GEMINI_API_BASE}/models/${this.model}?key=${this.apiKey}`,
-        { method: 'GET' },
-      );
-      return response.ok;
-    } catch {
-      return false;
-    }
+    async isAvailable(): Promise<boolean> {
+    // Pas d'appel réseau — juste vérifier la clé (économise le quota)
+    return !!this.apiKey && this.apiKey.length >= 10;
   }
+
 
   /**
    * Envoie un message au LLM et retourne la réponse
@@ -117,6 +109,8 @@ export class GeminiProvider implements LLMProviderInstance {
       if (!response.ok) {
         const errorText = await response.text();
         log.error(`API error ${response.status}:`, errorText);
+        
+        // Pas de retry ici — géré par le store (15s wait + retry)
         throw new Error(`Gemini API error ${response.status}: ${errorText}`);
       }
 
