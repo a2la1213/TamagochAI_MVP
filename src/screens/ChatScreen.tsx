@@ -187,7 +187,7 @@ export function ChatScreen() {
             style={{ width: 40, height: 40, borderRadius: 20 }}
             resizeMode="contain"
           />
-          <Text style={styles.headerTitle}>{name}</Text>
+          <TouchableOpacity onPress={handleDebugTap} activeOpacity={0.7}><Text style={styles.headerTitle}>{name}</Text></TouchableOpacity>
           <BatteryIndicator percent={batteryPercent} isCharging={isCharging || false} />
         </View>
         <TouchableOpacity style={styles.headerButton} onPress={() => { setActiveScreen('settings'); }}>
