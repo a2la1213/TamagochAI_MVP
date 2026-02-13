@@ -731,6 +731,10 @@ export async function updateMemory(
     importance: number;
     emotional_weight: number;
     is_consolidated: number;
+    memory_tier: string;
+    consolidated_into: string;
+    last_reinforced_at: string;
+    reinforcement_count: number;
   }>,
 ): Promise<void> {
   const db = await getDB();
@@ -1309,6 +1313,10 @@ function mapRowToMemory(row: any): Memory {
     accessCount: row.access_count,
     lastAccessedAt: row.last_accessed_at,
     isConsolidated: row.is_consolidated === 1,
+    reinforcementCount: row.reinforcement_count || 0,
+    memoryTier: row.memory_tier || 'active',
+    consolidatedInto: row.consolidated_into || null,
+    lastReinforcedAt: row.last_reinforced_at || null,
     isFlash: row.is_flash === 1,
     sourceConversationId: row.source_conversation_id,
     sourceMessageId: row.source_message_id,

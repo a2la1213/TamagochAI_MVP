@@ -66,6 +66,7 @@ import {
   stopSubconscious,
   getRecentThoughts,
 } from '../services/core/SubconsciousService';
+import { consolidateMemories } from '../services/core/MemoryService';
 import {
   initDreams,
   generateDream,

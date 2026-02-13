@@ -36,6 +36,12 @@ export interface Memory {
   // Source
   sourceConversationId: string | null;
   sourceMessageId: string | null;
+
+  // Consolidation humaine
+  reinforcementCount: number;     // Combien de fois ce souvenir a été renforcé
+  memoryTier: 'active' | 'consolidated' | 'deep';  // Niveau de mémoire
+  consolidatedInto: string | null;  // ID du souvenir résumé
+  lastReinforcedAt: string | null;  // Dernière fois renforcé
   
   createdAt: string;
   updatedAt: string;

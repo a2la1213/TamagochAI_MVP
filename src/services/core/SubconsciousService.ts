@@ -24,6 +24,7 @@ import {
   getRecentMemories,
   getTopMemories,
   searchMemories,
+  reinforceByTheme,
 } from './MemoryService';
 import { getCurrentLevels, getMood } from './HormoneService';
 import { getCurrentEmotion } from './EmotionService';
@@ -49,6 +50,7 @@ const log = createLogger('Subconscious');
 let thoughts: InternalThought[] = [];
 let isRunning = false;
 let thinkingInterval: ReturnType<typeof setInterval> | null = null;
+let currentTamadachiId: string = '';
 let lastThoughtTime = 0;
 let tamaId: string | null = null;
 
@@ -236,6 +238,18 @@ async function generateThought(type: ThoughtType): Promise<InternalThought | nul
     };
 
     thoughts.push(thought);
+
+  // Renforcer les souvenirs liés à cette pensée
+  try {
+    const tamadachiId = currentTamadachiId || '';
+    if (tamadachiId && thought.content) {
+      // Extraire les mots-clés de la pensée
+      const keywords = thought.content.split(/\s+/).filter((w: string) => w.length > 4).slice(0, 3).join(' ');
+      if (keywords) {
+        await reinforceByTheme(tamadachiId, keywords);
+      }
+    }
+  } catch (e) { /* silent */ }
     lastThoughtTime = Date.now();
 
     log.info(`💭 [${type}] ${thought.content.substring(0, 60)}...`);

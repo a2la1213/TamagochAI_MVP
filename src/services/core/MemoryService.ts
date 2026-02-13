@@ -13,6 +13,7 @@
 // extraire des souvenirs. Les souvenirs sont injectés dans
 // le prompt système du LLM.
 
+import { getDB } from '../database/DatabaseService';
 import {
   Memory,
   MemoryType,
@@ -519,99 +520,65 @@ export async function getFormattedRelevantMemories(
  */
 export async function getMemoryDigest(tamadachiId: string): Promise<string> {
   try {
-    // Récupérer TOUS les souvenirs
-    const allFacts = await getMemoriesByType(tamadachiId, 'fact', 100);
-    const allPrefs = await getMemoriesByType(tamadachiId, 'preference', 50);
-    const allEmotions = await getMemoriesByType(tamadachiId, 'emotion', 50);
-    const allTopics = await getMemoriesByType(tamadachiId, 'topic', 50);
-    const allEvents = await getMemoriesByType(tamadachiId, 'event', 50);
-    const allFlash = await queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 20 });
-    const allRelations = await getMemoriesByType(tamadachiId, 'relationship', 30);
+    // === MÉMOIRE ACTIVE (toujours dans le prompt) ===
+    const activeMemories = await getMemoriesByTier(tamadachiId, 'active', 50);
+    const flashMemories = await queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 20 });
 
-    const total = allFacts.length + allPrefs.length + allEmotions.length +
-      allTopics.length + allEvents.length + allFlash.length + allRelations.length;
+    // === MÉMOIRE CONSOLIDÉE (résumés) ===
+    const consolidatedMemories = await getMemoriesByTier(tamadachiId, 'consolidated', 30);
 
     const lines: string[] = [];
-    lines.push('=== TA MÉMOIRE COMPLÈTE (' + total + ' souvenirs) ===');
-    lines.push('Tu peux citer et utiliser TOUS ces souvenirs librement.');
+    const total = activeMemories.length + flashMemories.length + consolidatedMemories.length;
+
+    lines.push('=== TA MÉMOIRE (' + total + ' souvenirs actifs) ===');
     lines.push('');
 
-    // Helper pour formater avec date
+    // Helper formatage
     const fmt = (m: Memory): string => {
       const date = new Date(m.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
       const flash = m.isFlash ? ' ⚡' : '';
-      const emotion = m.emotionalWeight > 50 ? ' (chargé émotionnellement)' : '';
-      const ctx = m.context ? ' → Message original: "' + m.context.slice(0, 200) + '"' : '';
-      return '[' + date + '] ' + m.content + flash + emotion + ctx;
+      const reinforced = (m.reinforcementCount || 0) >= 3 ? ' 🔄' : '';
+      return '[' + date + '] ' + m.content + flash + reinforced;
     };
 
-    if (allFacts.length > 0) {
-      lines.push('📌 FAITS CONNUS SUR TON HUMAIN:');
-      allFacts.forEach(m => lines.push('  - ' + fmt(m)));
-      lines.push('');
-    }
-    if (allRelations.length > 0) {
-      lines.push('👥 RELATIONS:');
-      allRelations.forEach(m => lines.push('  - ' + fmt(m)));
-      lines.push('');
-    }
-    if (allPrefs.length > 0) {
-      lines.push('❤️ PRÉFÉRENCES:');
-      allPrefs.forEach(m => lines.push('  - ' + fmt(m)));
-      lines.push('');
-    }
-    if (allTopics.length > 0) {
-      lines.push('💬 SUJETS ABORDÉS:');
-      allTopics.forEach(m => lines.push('  - ' + fmt(m)));
-      lines.push('');
-    }
-    if (allEvents.length > 0) {
-      lines.push('📅 ÉVÉNEMENTS:');
-      allEvents.forEach(m => lines.push('  - ' + fmt(m)));
-      lines.push('');
-    }
-    if (allFlash.length > 0) {
-      lines.push('⚡ MOMENTS FORTS (tes souvenirs les plus précieux):');
-      allFlash.forEach(m => lines.push('  - ' + fmt(m)));
-      lines.push('');
-    }
-    if (allEmotions.length > 0) {
-      lines.push('💫 ÉMOTIONS PARTAGÉES:');
-      allEmotions.forEach(m => lines.push('  - ' + fmt(m)));
+    // Flash memories (permanents, fondamentaux)
+    if (flashMemories.length > 0) {
+      lines.push('⚡ SOUVENIRS FONDAMENTAUX (gravés en toi):');
+      flashMemories.forEach(m => lines.push('  - ' + fmt(m)));
       lines.push('');
     }
 
-    // Ouvrir les conversations des 5 souvenirs les plus importants
-    const topMemories = [...allFlash, ...allFacts]
-      .sort((a, b) => b.importance - a.importance)
-      .slice(0, 5);
-
-    const openedConversations: string[] = [];
-    for (const mem of topMemories) {
-      if (mem.sourceConversationId && mem.sourceMessageId) {
-        try {
-          const messages = await getMessagesAroundId(
-            mem.sourceConversationId,
-            mem.sourceMessageId,
-            3,
-          );
-          if (messages.length > 0) {
-            const date = new Date(mem.createdAt).toLocaleDateString('fr-FR');
-            openedConversations.push('--- Conversation du ' + date + ' (souvenir: ' + mem.content + ') ---');
-            for (const msg of messages) {
-              const role = msg.role === 'user' ? 'Humain' : 'Toi';
-              openedConversations.push(role + ': ' + msg.content.slice(0, 300));
-            }
-            openedConversations.push('');
-          }
-        } catch (e) { /* ignore */ }
-      }
+    // Active — groupés par type
+    const byType = new Map<string, Memory[]>();
+    for (const m of activeMemories) {
+      if (m.isFlash) continue; // Déjà listé
+      const type = m.type || 'fact';
+      if (!byType.has(type)) byType.set(type, []);
+      byType.get(type)!.push(m);
     }
 
-    if (openedConversations.length > 0) {
-      lines.push('📖 EXTRAITS DE CONVERSATIONS PASSÉES (tes 5 souvenirs les plus importants):');
-      lines.push(...openedConversations);
+    const typeLabels: Record<string, string> = {
+      fact: '📌 FAITS', preference: '❤️ PRÉFÉRENCES', relationship: '👥 RELATIONS',
+      emotion: '💭 SOUVENIRS ÉMOTIONNELS', event: '📅 ÉVÉNEMENTS', topic: '🎯 SUJETS',
+    };
+
+    for (const [type, mems] of byType) {
+      lines.push((typeLabels[type] || type.toUpperCase()) + ':');
+      mems.slice(0, 15).forEach(m => lines.push('  - ' + fmt(m)));
+      lines.push('');
     }
+
+    // Consolidés — version condensée
+    if (consolidatedMemories.length > 0) {
+      lines.push('📦 MÉMOIRE CONSOLIDÉE (souvenirs plus anciens):');
+      consolidatedMemories.forEach(m => {
+        lines.push('  - ' + m.content);
+      });
+      lines.push('');
+    }
+
+    // Rappel : mémoire profonde existe
+    lines.push('💡 Tu as aussi une mémoire profonde. Si ton humain mentionne un vieux sujet, fouille ta mémoire !');
 
     return lines.join('\n');
   } catch (error) {
@@ -629,49 +596,165 @@ export async function getMemoryDigest(tamadachiId: string): Promise<string> {
  * - Réduit l'importance des souvenirs non-flash avec le temps
  * - Marque les souvenirs consolidés
  */
+// ============================================================
+// SYSTÈME DE MÉMOIRE HUMAINE — 3 NIVEAUX
+// ============================================================
+// Active: souvenirs récents (<7j) ou très renforcés → toujours dans le prompt
+// Consolidée: résumés de souvenirs groupés → dans le prompt en version condensée
+// Profonde: vieux souvenirs rarement rappelés → cherchables par contexte
+
+/**
+ * Renforce un souvenir (comme la répétition chez l'humain)
+ * Appelé quand: le subconscient y pense, l'utilisateur en reparle, ou un thème récurrent apparaît
+ */
+export async function reinforceMemory(memoryId: string): Promise<void> {
+  try {
+    const db = await getDB();
+    await db.runAsync(
+      `UPDATE memories SET
+        reinforcement_count = reinforcement_count + 1,
+        last_reinforced_at = ?,
+        importance = MIN(10, importance + 1),
+        access_count = access_count + 1,
+        last_accessed_at = ?
+      WHERE id = ?`,
+      [new Date().toISOString(), new Date().toISOString(), memoryId]
+    );
+  } catch (e) {
+    log.warn('Failed to reinforce memory:', e);
+  }
+}
+
+/**
+ * Renforce les souvenirs liés à un thème (ex: subconscient pense à la spiritualité)
+ */
+export async function reinforceByTheme(tamadachiId: string, theme: string): Promise<number> {
+  try {
+    const related = await findRelevantMemories(tamadachiId, theme, 10);
+    let reinforced = 0;
+    for (const mem of related) {
+      await reinforceMemory(mem.id);
+      reinforced++;
+    }
+    if (reinforced > 0) {
+      log.info(`🔄 Reinforced ${reinforced} memories for theme: "${theme}"`);
+    }
+    return reinforced;
+  } catch (e) {
+    log.warn('Failed to reinforce by theme:', e);
+    return 0;
+  }
+}
+
+/**
+ * Consolidation complète — comme le sommeil chez l'humain
+ * 1. Renforce les souvenirs fréquemment accédés
+ * 2. Groupe les souvenirs similaires en résumés
+ * 3. Déplace les vieux souvenirs peu accédés en mémoire profonde
+ * 4. Oublie les souvenirs très faibles (importance 1, jamais renforcés)
+ */
 export async function consolidateMemories(tamadachiId: string): Promise<number> {
   try {
-    const allMemories = await queryMemories(tamadachiId, {
-      orderBy: 'recent',
-      limit: 500,
-    });
-
-    let consolidated = 0;
+    const db = await getDB();
+    const allMemories = await queryMemories(tamadachiId, { orderBy: 'recent', limit: 500 });
+    let actions = 0;
+    const now = Date.now();
 
     for (const memory of allMemories) {
-      // Les flash memories sont immunisés
-      if (memory.isFlash) continue;
-      // Déjà consolidé
-      if (memory.isConsolidated) continue;
+      if (memory.isFlash) continue; // Flash = permanent
+      if (memory.memoryTier === 'deep' && memory.consolidatedInto) continue; // Déjà archivé
 
-      // Vérifier l'âge
-      const ageHours = (Date.now() - new Date(memory.createdAt).getTime()) / (1000 * 60 * 60);
-      if (ageHours < MEMORY_CONFIG.consolidation.minAgeHours) continue;
+      const ageDays = (now - new Date(memory.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      const reinforcements = memory.reinforcementCount || 0;
+      const lastReinforced = memory.lastReinforcedAt
+        ? (now - new Date(memory.lastReinforcedAt).getTime()) / (1000 * 60 * 60 * 24)
+        : ageDays;
 
-      // Appliquer le decay d'importance
-      const newImportance = Math.max(
-        1,
-        Math.round(memory.importance * MEMORY_CONFIG.consolidation.decayFactor),
-      );
+      // === RÈGLE 1: Souvenirs très renforcés → restent actifs (comme un humain) ===
+      if (reinforcements >= 5 || memory.importance >= 8) {
+        if (memory.memoryTier !== 'active') {
+          await updateMemory(memory.id, { memory_tier: 'active' });
+          actions++;
+        }
+        continue;
+      }
 
-      if (newImportance !== memory.importance) {
-        await updateMemory(memory.id, {
-          importance: newImportance,
-          is_consolidated: 1,
-        });
-        consolidated++;
+      // === RÈGLE 2: Souvenirs > 7 jours, peu renforcés → consolidés ===
+      if (ageDays > 7 && reinforcements < 3 && memory.memoryTier === 'active') {
+        await updateMemory(memory.id, { memory_tier: 'consolidated' });
+        // Decay d'importance
+        const newImportance = Math.max(1, Math.round(memory.importance * 0.9));
+        await updateMemory(memory.id, { importance: newImportance });
+        actions++;
+        continue;
+      }
+
+      // === RÈGLE 3: Souvenirs > 30 jours, jamais renforcés → mémoire profonde ===
+      if (ageDays > 30 && reinforcements === 0 && memory.importance <= 3) {
+        await updateMemory(memory.id, { memory_tier: 'deep' });
+        actions++;
+        continue;
+      }
+
+      // === RÈGLE 4: Souvenirs > 90 jours, importance 1, 0 renforcement → oubli ===
+      if (ageDays > 90 && memory.importance <= 1 && reinforcements === 0) {
+        await db.runAsync('DELETE FROM memories WHERE id = ?', [memory.id]);
+        log.info(`🗑️ Forgot weak memory: "${memory.content.slice(0, 50)}..."`);
+        actions++;
+        continue;
+      }
+
+      // === RÈGLE 5: Decay naturel pour les souvenirs consolidés ===
+      if (memory.memoryTier === 'consolidated' && lastReinforced > 14) {
+        const newImportance = Math.max(1, memory.importance - 1);
+        await updateMemory(memory.id, { importance: newImportance });
+        actions++;
       }
     }
 
-    if (consolidated > 0) {
-      log.info(`Consolidated ${consolidated} memories`);
+    if (actions > 0) {
+      log.info(`🧠 Memory consolidation: ${actions} actions on ${allMemories.length} memories`);
     }
 
-    return consolidated;
+    return actions;
   } catch (error) {
     log.error('Failed to consolidate memories:', error);
     return 0;
   }
+}
+
+/**
+ * Récupère les souvenirs par tier pour le prompt
+ */
+export async function getMemoriesByTier(tamadachiId: string, tier: 'active' | 'consolidated' | 'deep', limit: number = 50): Promise<Memory[]> {
+  const db = await getDB();
+  const rows = await db.getAllAsync<any>(
+    `SELECT * FROM memories WHERE tamadachi_id = ? AND memory_tier = ?
+     ORDER BY importance DESC, reinforcement_count DESC
+     LIMIT ?`,
+    [tamadachiId, tier, limit]
+  );
+  return rows.map((row: any) => ({
+    id: row.id,
+    tamadachiId: row.tamadachi_id,
+    type: row.type,
+    content: row.content,
+    context: row.context,
+    importance: row.importance,
+    emotionalWeight: row.emotional_weight,
+    accessCount: row.access_count || 0,
+    lastAccessedAt: row.last_accessed_at,
+    isConsolidated: row.is_consolidated === 1,
+    isFlash: row.is_flash === 1,
+    sourceConversationId: row.source_conversation_id,
+    sourceMessageId: row.source_message_id,
+    reinforcementCount: row.reinforcement_count || 0,
+    memoryTier: row.memory_tier || 'active',
+    consolidatedInto: row.consolidated_into || null,
+    lastReinforcedAt: row.last_reinforced_at || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
 }
 
 // ============================================================

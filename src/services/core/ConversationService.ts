@@ -86,6 +86,7 @@ import {
   getFormattedRelevantMemories,
   getMemoryDigest,
   getUserFacts,
+  reinforceByTheme,
 } from './MemoryService';
 
 import {
@@ -450,6 +451,33 @@ async function buildSystemPrompt(
     log.warn('Memory retrieval in prompt failed:', memError);
   }
 
+  // Recherche en mémoire profonde si l'utilisateur demande
+  let deepMemoryHit = '';
+  try {
+    const memoryTriggers = ['souviens', 'rappelles', 'parlé de', 'on avait', 'tu sais', 'je t\'avais dit', 'la dernière fois'];
+    const needsDeepSearch = memoryTriggers.some(t => currentMessage.toLowerCase().includes(t));
+    if (needsDeepSearch) {
+      const { getMemoriesByTier } = await import('./MemoryService');
+      const deepMemories = await getMemoriesByTier(tamadachiId, 'deep', 20);
+      const keywords = currentMessage.split(/\s+/).filter((w: string) => w.length > 3);
+      const matches = deepMemories.filter(m =>
+        keywords.some(kw => m.content.toLowerCase().includes(kw.toLowerCase()))
+      );
+      if (matches.length > 0) {
+        deepMemoryHit = '\n\n🔍 SOUVENIRS RETROUVÉS DANS TA MÉMOIRE PROFONDE:\n' +
+          matches.map(m => '  - [' + new Date(m.createdAt).toLocaleDateString('fr-FR') + '] ' + m.content).join('\n');
+      }
+    }
+  } catch (e) { /* silent */ }
+
+  // Renforcer les souvenirs liés au message de l'utilisateur
+  try {
+    const keywords = currentMessage.split(/\s+/).filter((w: string) => w.length > 4).slice(0, 5).join(' ');
+    if (keywords) {
+      await reinforceByTheme(tamadachiId, keywords);
+    }
+  } catch (e) { /* silent */ }
+
   // Résumé condensé de TOUS les souvenirs
   try {
     memoryDigest = await getMemoryDigest(tamadachiId);
@@ -487,7 +515,7 @@ async function buildSystemPrompt(
     mood_description: `${mood.emoji} ${mood.label} (score: ${mood.score})`,
     hormonal_state: getHormonalDescription(),
     relevant_memories: memoriesText,
-    memory_digest: memoryDigest,
+    memory_digest: memoryDigest + deepMemoryHit,
     user_name: userName,
     user_interests: userInterests,
     battery_level: batteryLevel != null ? formatBattery(batteryLevel) : 'non disponible',
