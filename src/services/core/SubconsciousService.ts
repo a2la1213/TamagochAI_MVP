@@ -239,17 +239,18 @@ async function generateThought(type: ThoughtType): Promise<InternalThought | nul
 
     thoughts.push(thought);
 
-  // Renforcer les souvenirs liés à cette pensée
-  try {
-    const tamadachiId = currentTamadachiId || '';
-    if (tamadachiId && thought.content) {
-      // Extraire les mots-clés de la pensée
-      const keywords = thought.content.split(/\s+/).filter((w: string) => w.length > 4).slice(0, 3).join(' ');
-      if (keywords) {
-        await reinforceByTheme(tamadachiId, keywords);
+  // Renforcement mémoire — seulement toutes les 10 pensées (pas chaque fois)
+  if (thoughts.length % 10 === 0) {
+    try {
+      const tamadachiId = currentTamadachiId || '';
+      if (tamadachiId && thought.content) {
+        const keywords = thought.content.split(/\s+/).filter((w: string) => w.length > 4).slice(0, 3).join(' ');
+        if (keywords) {
+          await reinforceByTheme(tamadachiId, keywords);
+        }
       }
-    }
-  } catch (e) { /* silent */ }
+    } catch (e) { /* silent */ }
+  }
     lastThoughtTime = Date.now();
 
     log.info(`💭 [${type}] ${thought.content.substring(0, 60)}...`);

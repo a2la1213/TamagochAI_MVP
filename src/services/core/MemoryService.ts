@@ -336,7 +336,7 @@ export async function findRelevantMemories(
       limit: 8,
     });
     addUnique(recentMemories);
-    log.info(`Memory layer 1 (recent): ${recentMemories.length} found`);
+    // log supprimé (trop verbeux)
   } catch (e) {
     log.info('Recent memories query failed');
   }
@@ -348,7 +348,7 @@ export async function findRelevantMemories(
     try {
       const ftsResults = await searchMemories(tamadachiId, searchQuery, Math.ceil(limit / 3));
       addUnique(ftsResults);
-      log.info(`Memory layer 2 (FTS): ${ftsResults.length} found for "${searchQuery}"`);
+      // log supprimé (trop verbeux)
     } catch (error) {
       // Essayer mot par mot en fallback
       for (const kw of keywords.slice(0, 5)) {
@@ -357,7 +357,7 @@ export async function findRelevantMemories(
           addUnique(kwResults);
         } catch (e) { /* ignore individual failures */ }
       }
-      log.info('FTS OR failed, tried individual keywords');
+      // log supprimé
     }
   }
 
@@ -521,11 +521,11 @@ export async function getFormattedRelevantMemories(
 export async function getMemoryDigest(tamadachiId: string): Promise<string> {
   try {
     // === MÉMOIRE ACTIVE (toujours dans le prompt) ===
-    const activeMemories = await getMemoriesByTier(tamadachiId, 'active', 50);
+    const activeMemories = await getMemoriesByTier(tamadachiId, 'active', 20);
     const flashMemories = await queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 20 });
 
     // === MÉMOIRE CONSOLIDÉE (résumés) ===
-    const consolidatedMemories = await getMemoriesByTier(tamadachiId, 'consolidated', 30);
+    const consolidatedMemories = await getMemoriesByTier(tamadachiId, 'consolidated', 10);
 
     const lines: string[] = [];
     const total = activeMemories.length + flashMemories.length + consolidatedMemories.length;

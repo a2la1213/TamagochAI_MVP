@@ -459,7 +459,7 @@ async function buildSystemPrompt(
     const needsDeepSearch = memoryTriggers.some(t => currentMessage.toLowerCase().includes(t));
     if (needsDeepSearch) {
       const { getMemoriesByTier } = await import('./MemoryService');
-      const deepMemories = await getMemoriesByTier(tamadachiId, 'deep', 20);
+      const deepMemories = await getMemoriesByTier(tamadachiId, 'deep', 10);
       const keywords = currentMessage.split(/\s+/).filter((w: string) => w.length > 3);
       const matches = deepMemories.filter(m =>
         keywords.some(kw => m.content.toLowerCase().includes(kw.toLowerCase()))
@@ -471,11 +471,11 @@ async function buildSystemPrompt(
     }
   } catch (e) { /* silent */ }
 
-  // Renforcer les souvenirs liés au message de l'utilisateur
+  // Renforcer les souvenirs (fire & forget, non-bloquant)
   try {
     const keywords = currentMessage.split(/\s+/).filter((w: string) => w.length > 4).slice(0, 5).join(' ');
     if (keywords) {
-      await reinforceByTheme(tamadachiId, keywords);
+      reinforceByTheme(tamadachiId, keywords).catch(() => {});
     }
   } catch (e) { /* silent */ }
 

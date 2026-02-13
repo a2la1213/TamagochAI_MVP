@@ -18,11 +18,14 @@ interface DebugState {
 }
 
 let logId = 0;
-const MAX_LOGS = 200;
+const MAX_LOGS = 500;
 
 export const useDebugStore = create<DebugState>((set) => ({
   logs: [],
   addLog: (level, tag, message) => {
+    // Skip les logs Memory trop répétitifs
+    if (tag === 'Memory' && message.includes('layer')) return;
+    
     const entry: LogEntry = {
       id: logId++,
       timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
