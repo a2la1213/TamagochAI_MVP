@@ -231,6 +231,15 @@ async function attemptWithRetry(
 // ============================================================
 
 export async function setApiKey(provider: LLMProviderName, key: string): Promise<boolean> {
+  // S'assurer que les providers sont instanciés même si initLLM n'a pas fini
+  if (providers.size === 0) {
+    providers.set('gemini', new GeminiProvider());
+    providers.set('claude', new ClaudeProvider());
+    providers.set('openai', createOpenAIProvider());
+    providers.set('deepseek', createDeepSeekProvider());
+    providers.set('perplexity', createPerplexityProvider());
+  }
+
   const instance = providers.get(provider);
   if (!instance) return false;
 
@@ -242,14 +251,18 @@ export async function setApiKey(provider: LLMProviderName, key: string): Promise
   // Recalculer l'ordre de fallback avec le nouveau provider
   updateFallbackOrder();
 
-  // Si c'est la première clé ou pas de provider preferred, le définir
-  if (!preferredProvider || !getAvailableProviders().includes(preferredProvider)) {
-    preferredProvider = provider;
-    await setSetting('preferred_provider', provider);
-    log.info(`Auto-set preferred provider: ${provider}`);
+  // Marquer comme initialisé si les providers existent
+  if (!isInitialized && providers.size > 0) {
+    isInitialized = true;
+    log.info('LLM auto-initialized via setApiKey');
   }
 
-  log.info(`API key set for ${provider}, available: ${getAvailableProviders().join(', ')}`);
+  // Forcer ce provider comme preferred s'il est le seul configuré
+  preferredProvider = provider;
+  await setSetting('preferred_provider', provider);
+  updateFallbackOrder();
+
+  log.info(`API key set for ${provider}, preferred: ${preferredProvider}, fallback: ${fallbackOrder.join(',')}`);
   return true;
 }
 
