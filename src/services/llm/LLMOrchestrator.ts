@@ -144,7 +144,9 @@ export async function chat(
     userAttachments,
   };
 
+  log.info(`🔄 chat() called — providers map size: ${providers.size}, preferred: ${preferredProvider}`);
   const providerOrder = buildProviderOrder(options?.provider, options?.skipFallback);
+  log.info(`🔄 Provider order: [${providerOrder.join(', ')}]`);
   const errors: string[] = [];
 
   for (const providerName of providerOrder) {

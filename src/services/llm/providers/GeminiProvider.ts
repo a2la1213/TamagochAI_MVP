@@ -113,6 +113,7 @@ export class GeminiProvider implements LLMProviderInstance {
         },
       );
 
+      log.info(`📡 Gemini HTTP response: status=${response.status}`);
       if (!response.ok) {
         const errorText = await response.text();
         log.error(`API error ${response.status}:`, errorText);
@@ -120,6 +121,7 @@ export class GeminiProvider implements LLMProviderInstance {
       }
 
       const data = await response.json();
+      log.info(`📡 Gemini response parsed, has candidates: ${!!data?.candidates}`);
       const generationTime = Date.now() - startTime;
 
       // Extraire la réponse
@@ -165,6 +167,7 @@ export class GeminiProvider implements LLMProviderInstance {
         },
       );
 
+      log.info(`📡 Gemini HTTP response: status=${response.status}`);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Gemini API error ${response.status}: ${errorText}`);

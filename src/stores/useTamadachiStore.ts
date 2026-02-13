@@ -355,12 +355,14 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       set({ messages });
 
       // 4. Regénérer la réponse LLM
+      log.info('📤 STEP 3: Calling processUserMessage...');
       const result = await processUserMessage(tamadachi.id, newContent, getBatteryLevel(), isBatteryCharging());
       const enrichedPrompt = enrichPromptWithMetacognition(result.systemPrompt);
       const chatHistory = await getFormattedChatHistory(20);
       const temperature = getIdealTemperature(tamadachi.genome, tamadachi.stage);
       const maxTokens = getIdealMaxTokens(tamadachi.genome, tamadachi.stage);
 
+      log.info('📤 STEP 5: Starting LLM call...');
       set({ streamingText: '...' });
 
       const response = await chat(enrichedPrompt, chatHistory.slice(0, -1), newContent, { temperature, maxTokens });
@@ -424,6 +426,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       set({ batteryLevel, batteryCharging: charging });
 
       // 1. Pipeline complet (hormones, XP, mémoire, etc.)
+      log.info('📤 STEP 3: Calling processUserMessage...');
       const result = await processUserMessage(
         tamadachi.id,
         content,
@@ -443,6 +446,8 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         await updateMessageAttachments(result.messageId, attData);
       }
 
+      log.info('📤 STEP 4: processUserMessage done, convId=' + result.conversationId);
+
       // 2. Refresh messages (inclut le message user)
       // Messages déjà à jour grâce au temp message ajouté avant
 
@@ -458,6 +463,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
       // 6. Appel LLM (direct, pas de streaming — React Native ne supporte pas ReadableStream)
       let fullResponse = '';
+      log.info('📤 STEP 5: Starting LLM call...');
       set({ streamingText: '...' });
 
       // Safety timeout pour éviter le blocage infini
@@ -468,6 +474,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         mimeType: a.mimeType,
       }));
 
+      log.info('📤 STEP 6: Calling chat() with provider=' + getPreferredProvider() + ' available=' + getAvailableProviders().join(','));
       const chatPromise = chat(
         enrichedPrompt,
         chatHistory.slice(0, -1),
@@ -477,7 +484,9 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout: pas de réponse après 60s')), 65000)
       );
+      log.info('📤 STEP 7: Waiting for response (65s timeout)...');
       const response = await Promise.race([chatPromise, timeoutPromise]);
+      log.info('📤 STEP 8: Got response! success=' + response.success + ' provider=' + response.provider + ' error=' + (response.error || 'none'));
 
       if (response.success) {
         fullResponse = response.content;
