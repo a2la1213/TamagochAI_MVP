@@ -34,7 +34,7 @@ const AVATAR_IMAGES: Record<string, any> = {
 };
 
 const AVATAR_CHOICES = [
-  { type: 'animal', emoji: '🦊', label: 'Fennec', color: '#F59E0B', hasImage: true, imageKey: 'animal' as const },
+  { type: 'animal', emoji: '🦊', label: 'Animal', color: '#F59E0B', hasImage: true, imageKey: 'animal' as const },
   { type: 'robot', emoji: '🤖', label: 'Cyborg', color: '#3B82F6', hasImage: true, imageKey: 'cyborg' as const },
   { type: 'humanoid', emoji: '🧑', label: 'Humain', color: '#EF4444', hasImage: true, imageKey: 'human' as const },
   { type: 'creature', emoji: '🧝', label: 'Elfe', color: '#10B981', hasImage: true, imageKey: 'elf' as const },
