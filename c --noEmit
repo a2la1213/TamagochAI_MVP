@@ -1,0 +1,3 @@
+[33m6784625[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: 429 root cause - maxRetries=0, no provider retry, background delayed 3min, editAndResend timeout, 1 retry max per message
+[33m94161c6[m fix: CRITICAL - Memory service was blocking LLM pipeline (infinite query spam), silenced logs, delayed subconscious, fire-and-forget reinforcement
+[33m88873af[m fix: debug tap linked to name, touchable on Android

@@ -46,6 +46,20 @@ let preferredProvider: LLMProviderName = 'gemini';
 let fallbackOrder: LLMProviderName[] = ['gemini', 'deepseek', 'openai', 'claude', 'perplexity'];
 let isInitialized = false;
 
+// Rate limiter — minimum 2s entre chaque appel
+let lastLLMCallTime = 0;
+const MIN_CALL_INTERVAL_MS = 2000;
+
+async function waitForRateLimit(): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - lastLLMCallTime;
+  if (elapsed < MIN_CALL_INTERVAL_MS) {
+    const wait = MIN_CALL_INTERVAL_MS - elapsed;
+    await new Promise(r => setTimeout(r, wait));
+  }
+  lastLLMCallTime = Date.now();
+}
+
 const stats: LLMStats = {
   totalRequests: 0,
   totalErrors: 0,
@@ -207,6 +221,7 @@ async function attemptWithRetry(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      await waitForRateLimit();
       const startTime = Date.now();
       const response = await provider.generate(request);
       response.latencyMs = Date.now() - startTime;

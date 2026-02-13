@@ -728,12 +728,27 @@ export async function consolidateMemories(tamadachiId: string): Promise<number> 
  */
 export async function getMemoriesByTier(tamadachiId: string, tier: 'active' | 'consolidated' | 'deep', limit: number = 50): Promise<Memory[]> {
   const db = await getDB();
-  const rows = await db.getAllAsync<any>(
-    `SELECT * FROM memories WHERE tamadachi_id = ? AND memory_tier = ?
-     ORDER BY importance DESC, reinforcement_count DESC
-     LIMIT ?`,
-    [tamadachiId, tier, limit]
-  );
+  let rows: any[];
+  try {
+    // Essayer avec memory_tier si la colonne existe
+    rows = await db.getAllAsync<any>(
+      `SELECT * FROM memories WHERE tamadachi_id = ? AND memory_tier = ?
+       ORDER BY importance DESC, reinforcement_count DESC
+       LIMIT ?`,
+      [tamadachiId, tier, limit]
+    );
+  } catch (_) {
+    // Fallback: utiliser is_consolidated pour déterminer le tier
+    let condition = 'is_consolidated = 0';
+    if (tier === 'consolidated') condition = 'is_consolidated = 1';
+    else if (tier === 'deep') condition = 'importance <= 3';
+    rows = await db.getAllAsync<any>(
+      `SELECT * FROM memories WHERE tamadachi_id = ? AND ` + condition + `
+       ORDER BY importance DESC
+       LIMIT ?`,
+      [tamadachiId, limit]
+    );
+  }
   return rows.map((row: any) => ({
     id: row.id,
     tamadachiId: row.tamadachi_id,

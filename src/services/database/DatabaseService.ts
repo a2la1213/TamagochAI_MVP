@@ -74,6 +74,11 @@ export async function initDatabase(): Promise<void> {
     const alterMigrations = [
       'ALTER TABLE messages ADD COLUMN attachments TEXT',
       'ALTER TABLE conversations ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0',
+      // Memory tier system
+      "ALTER TABLE memories ADD COLUMN memory_tier TEXT NOT NULL DEFAULT 'active'",
+      "ALTER TABLE memories ADD COLUMN consolidated_into TEXT",
+      "ALTER TABLE memories ADD COLUMN last_reinforced_at TEXT",
+      "ALTER TABLE memories ADD COLUMN reinforcement_count INTEGER NOT NULL DEFAULT 0",
     ];
     for (const sql of alterMigrations) {
       try { await db.runAsync(sql); } catch (_) { /* duplicate column = OK */ }
