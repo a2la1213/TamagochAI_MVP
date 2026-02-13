@@ -581,22 +581,34 @@ type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 /**
  * Logger centralisé avec préfixe par module
  */
-export function createLogger(module: string) {
-  const log = (level: LogLevel, ...args: any[]) => {
-    if (!LOG_ENABLED && level !== 'error') return;
-    const prefix = `[${module}]`;
-    switch (level) {
-      case 'info': console.log(prefix, ...args); break;
-      case 'warn': console.warn(prefix, ...args); break;
-      case 'error': console.error(prefix, ...args); break;
-      case 'debug': console.log(`${prefix} [DEBUG]`, ...args); break;
+export function createLogger(tag: string) {
+  let debugLogFn: any = null;
+  
+  // Lazy import pour éviter les circular deps
+  const getDebugLog = () => {
+    if (!debugLogFn) {
+      try {
+        const { debugLog } = require('../stores/useDebugStore');
+        debugLogFn = debugLog;
+      } catch (e) {
+        debugLogFn = () => {};
+      }
     }
+    return debugLogFn;
   };
 
   return {
-    info: (...args: any[]) => log('info', ...args),
-    warn: (...args: any[]) => log('warn', ...args),
-    error: (...args: any[]) => log('error', ...args),
-    debug: (...args: any[]) => log('debug', ...args),
+    info: (...args: any[]) => {
+      console.log(`[${tag}]`, ...args);
+      try { getDebugLog()('info', tag, ...args); } catch(e) {}
+    },
+    warn: (...args: any[]) => {
+      console.warn(`[${tag}]`, ...args);
+      try { getDebugLog()('warn', tag, ...args); } catch(e) {}
+    },
+    error: (...args: any[]) => {
+      console.error(`[${tag}]`, ...args);
+      try { getDebugLog()('error', tag, ...args); } catch(e) {}
+    },
   };
 }

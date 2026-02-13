@@ -155,7 +155,7 @@ export async function awardXP(
     if (!options?.skipAntiGrind && lastXPGainTime) {
       const secondsSinceLast = (Date.now() - new Date(lastXPGainTime).getTime()) / 1000;
       if (secondsSinceLast < ANTI_GRIND.cooldownBetweenXP) {
-        log.debug(`XP cooldown active (${secondsSinceLast.toFixed(0)}s < ${ANTI_GRIND.cooldownBetweenXP}s)`);
+        log.info(`XP cooldown active (${secondsSinceLast.toFixed(0)}s < ${ANTI_GRIND.cooldownBetweenXP}s)`);
         return {
           awarded: false,
           baseAmount,

@@ -429,6 +429,7 @@ async function buildSystemPrompt(
   currentMessage: string,
   batteryLevel?: number,
 ): Promise<string> {
+
   const tama = await getTamadachi();
   if (!tama) throw new Error('No TamadachAI found');
 

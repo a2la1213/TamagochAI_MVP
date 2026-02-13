@@ -86,9 +86,11 @@ export async function initLLM(): Promise<void> {
   providers.set('deepseek', createDeepSeekProvider());
   providers.set('perplexity', createPerplexityProvider());
 
+  log.info('🔑 Loading saved API keys...');
   // Charger les clés API sauvegardées
   for (const [name, provider] of providers) {
     const savedKey = await getSetting(`api_key_${name}`);
+    log.info(`🔑 ${name}: key=${savedKey ? savedKey.substring(0, 8) + '...' : 'NONE'}`);
     if (savedKey) {
       provider.setApiKey(savedKey);
       log.info(`✅ ${name} key loaded`);
@@ -99,7 +101,8 @@ export async function initLLM(): Promise<void> {
   updateFallbackOrder();
 
   isInitialized = true;
-  log.info(`LLM initialized — Preferred: ${preferredProvider}, Available: ${getAvailableProviders().join(', ')}`);
+  const avail = getAvailableProviders();
+  log.info(`✅ LLM initialized — Preferred: ${preferredProvider}, Available: [${avail.join(', ')}] (${avail.length} providers)`);
 }
 
 // ============================================================

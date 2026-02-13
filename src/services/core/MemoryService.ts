@@ -237,7 +237,7 @@ export async function storeMemory(
     // Anti-doublon
     const exists = await memoryExists(tamadachiId, memory.content);
     if (exists) {
-      log.debug(`Memory already exists, skipping: ${truncate(memory.content, 50)}`);
+      log.info(`Memory already exists, skipping: ${truncate(memory.content, 50)}`);
       return null;
     }
 
@@ -336,9 +336,9 @@ export async function findRelevantMemories(
       limit: 8,
     });
     addUnique(recentMemories);
-    log.debug(`Memory layer 1 (recent): ${recentMemories.length} found`);
+    log.info(`Memory layer 1 (recent): ${recentMemories.length} found`);
   } catch (e) {
-    log.debug('Recent memories query failed');
+    log.info('Recent memories query failed');
   }
 
   // 2. COUCHE FTS — Recherche par mots-clés du message
@@ -348,7 +348,7 @@ export async function findRelevantMemories(
     try {
       const ftsResults = await searchMemories(tamadachiId, searchQuery, Math.ceil(limit / 3));
       addUnique(ftsResults);
-      log.debug(`Memory layer 2 (FTS): ${ftsResults.length} found for "${searchQuery}"`);
+      log.info(`Memory layer 2 (FTS): ${ftsResults.length} found for "${searchQuery}"`);
     } catch (error) {
       // Essayer mot par mot en fallback
       for (const kw of keywords.slice(0, 5)) {
@@ -357,7 +357,7 @@ export async function findRelevantMemories(
           addUnique(kwResults);
         } catch (e) { /* ignore individual failures */ }
       }
-      log.debug('FTS OR failed, tried individual keywords');
+      log.info('FTS OR failed, tried individual keywords');
     }
   }
 
@@ -369,9 +369,9 @@ export async function findRelevantMemories(
       limit: 5,
     });
     addUnique(flashMemories);
-    log.debug(`Memory layer 3 (flash): ${flashMemories.length} found`);
+    log.info(`Memory layer 3 (flash): ${flashMemories.length} found`);
   } catch (e) {
-    log.debug('Flash memories query failed');
+    log.info('Flash memories query failed');
   }
 
   // 4. COUCHE IMPORTANCE — Les souvenirs les plus importants (tous types)
@@ -379,7 +379,7 @@ export async function findRelevantMemories(
   if (remaining > 0) {
     const topMemories = await getTopMemories(tamadachiId, remaining + 5);
     addUnique(topMemories);
-    log.debug(`Memory layer 4 (top): ${topMemories.length} found`);
+    log.info(`Memory layer 4 (top): ${topMemories.length} found`);
   }
 
   // Mettre à jour les access counts

@@ -33,6 +33,7 @@ import { getAvatarImage } from '../constants/avatar';
 import { getUnsharedDream, markDreamAsShared } from '../services/core/DreamService';
 import { getAllMessages } from '../services/core/ConversationService';
 import { useTamadachiStore } from '../stores/useTamadachiStore';
+import DebugScreen from './DebugScreen';
 
 type Screen = 'chat' | 'settings' | 'stats';
 
@@ -69,6 +70,18 @@ export function ChatScreen() {
     }
   }, [messages.length, isGenerating]);
   const allLoaded = useRef(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const handleDebugTap = () => {
+    debugTapCount.current++;
+    if (debugTapTimer.current) clearTimeout(debugTapTimer.current);
+    debugTapTimer.current = setTimeout(() => { debugTapCount.current = 0; }, 500);
+    if (debugTapCount.current >= 5) {
+      debugTapCount.current = 0;
+      setShowDebug(true);
+    }
+  };
+  const debugTapCount = useRef(0);
+  const debugTapTimer = useRef<any>(null);
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
   const [evolutionStage, setEvolutionStage] = useState<EvolutionStage>(stage);
@@ -287,6 +300,13 @@ export function ChatScreen() {
           onStopSpeak={voice.stopSpeak}
         />
       </KeyboardAvoidingView>
+
+      {/* Debug Console */}
+      {showDebug && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}>
+          <DebugScreen onClose={() => setShowDebug(false)} />
+        </View>
+      )}
 
       {/* Evolution Modal */}
       <EvolutionModal

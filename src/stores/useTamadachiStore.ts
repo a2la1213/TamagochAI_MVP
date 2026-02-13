@@ -362,8 +362,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       const temperature = getIdealTemperature(tamadachi.genome, tamadachi.stage);
       const maxTokens = getIdealMaxTokens(tamadachi.genome, tamadachi.stage);
 
-      log.info('📤 STEP 5: Starting LLM call...');
-      set({ streamingText: '...' });
+      set({ streamingText: '⏳ Réflexion...' });
 
       const response = await chat(enrichedPrompt, chatHistory.slice(0, -1), newContent, { temperature, maxTokens });
 
@@ -401,8 +400,23 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     // Safety: forcer isGenerating à false après 90s
     const generatingTimeout = setTimeout(() => {
       if (get().isGenerating) {
-        log.warn('⚠️ isGenerating stuck for 90s, forcing reset');
+        const providers = getAvailableProviders();
+        const preferred = getPreferredProvider();
+        const errorReport = [
+          '⏱️ Timeout après 90s',
+          '',
+          'Provider: ' + preferred,
+          'Disponibles: ' + (providers.length > 0 ? providers.join(', ') : 'AUCUN ❌'),
+          '',
+          'Solutions:',
+          '• Vérifie ta connexion internet',
+          '• Vérifie ta clé API dans Paramètres',
+          '• Essaie un autre provider',
+        ].join('\n');
+        
+        log.error('⚠️ TIMEOUT REPORT: preferred=' + preferred + ' available=' + providers.join(','));
         set({ isGenerating: false, streamingText: '' });
+        Alert.alert('🕐 Pas de réponse', errorReport);
       }
     }, 90000);
 
@@ -463,8 +477,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
       // 6. Appel LLM (direct, pas de streaming — React Native ne supporte pas ReadableStream)
       let fullResponse = '';
-      log.info('📤 STEP 5: Starting LLM call...');
-      set({ streamingText: '...' });
+      set({ streamingText: '⏳ Réflexion...' });
 
       // Safety timeout pour éviter le blocage infini
       // Préparer les attachments pour le LLM
@@ -474,7 +487,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         mimeType: a.mimeType,
       }));
 
-      log.info('📤 STEP 6: Calling chat() with provider=' + getPreferredProvider() + ' available=' + getAvailableProviders().join(','));
+      set({ streamingText: '🧠 ' + getPreferredProvider() + '...' });
       const chatPromise = chat(
         enrichedPrompt,
         chatHistory.slice(0, -1),
@@ -482,11 +495,9 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         { temperature, maxTokens, attachments: llmAttachments },
       );
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout: pas de réponse après 60s')), 65000)
+        setTimeout(() => reject(new Error('Timeout 65s | Provider: ' + getPreferredProvider() + ' | Available: ' + getAvailableProviders().join(','))), 65000)
       );
-      log.info('📤 STEP 7: Waiting for response (65s timeout)...');
       const response = await Promise.race([chatPromise, timeoutPromise]);
-      log.info('📤 STEP 8: Got response! success=' + response.success + ' provider=' + response.provider + ' error=' + (response.error || 'none'));
 
       if (response.success) {
         fullResponse = response.content;
@@ -517,7 +528,15 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
           log.error('LLM error (non-quota): ' + response.error);
           log.error('Available providers: ' + getAvailableProviders().join(', '));
           log.error('Preferred: ' + getPreferredProvider());
-          Alert.alert('Erreur LLM', (response.error || 'Erreur de connexion') + '\n\nProviders: ' + getAvailableProviders().join(', '));
+          Alert.alert('Erreur LLM', [
+            response.error || 'Erreur de connexion',
+            '',
+            'Provider: ' + getPreferredProvider(),
+            'Disponibles: ' + getAvailableProviders().join(', '),
+            'Providers map: ' + (getAvailableProviders().length || '0'),
+            '',
+            'Vérifie ta clé API dans Paramètres',
+          ].join('\n'));
         }
       }
       set({ streamingText: fullResponse || '' });
@@ -533,7 +552,13 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       }
 
       // 9. Refresh complet
-      const updatedTama = await getTamadachi();
+      let updatedTama;
+      try {
+        updatedTama = await getTamadachi();
+      } catch (e: any) {
+        log.error('Refresh crashed:', e);
+        updatedTama = tamadachi;
+      }
       const convIdFinal = get().conversationId || getSessionInfo().conversationId;
       const finalMessages = convIdFinal ? await getMessagesPaginated(convIdFinal, 10) : [];
       const newEmotion = updateEmotion();
@@ -563,7 +588,14 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     } catch (error: any) {
       log.error('❌ Send message failed:', error);
       clearTimeout(generatingTimeout);
-      set({ isGenerating: false, streamingText: '', error: `Erreur: ${error.message}` });
+      const errReport = [
+        '❌ ' + error.message,
+        '',
+        'Provider: ' + getPreferredProvider(),
+        'Disponibles: ' + getAvailableProviders().join(', '),
+      ].join('\n');
+      set({ isGenerating: false, streamingText: '', error: error.message });
+      Alert.alert('Erreur', errReport);
     }
   },
 

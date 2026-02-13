@@ -292,7 +292,7 @@ export async function applyDecay(tamadachiId: string): Promise<HormoneLevels> {
     return getCurrentLevels();
   }
 
-  log.debug(`Applying decay: ${elapsed.toFixed(1)} minutes elapsed`);
+  log.info(`Applying decay: ${elapsed.toFixed(1)} minutes elapsed`);
   cachedLevels = applyDecayToAll(cachedLevels!, elapsed);
   cachedLastDecayAt = now();
 
