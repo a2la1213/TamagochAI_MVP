@@ -510,7 +510,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
         log.error(`LLM failed: ${response.error}`);
         // Retry auto pour quota
         if (response.error?.includes('429') || response.error?.includes('quota') || response.error?.includes('Resource has been exhausted')) {
-          log.warn('Quota/rate limit hit, retrying in 15s...');
+          log.warn('Quota/rate limit hit, retrying in 30s...');
           set({ streamingText: '⏳ Rate limit... retry dans 15s' });
           await new Promise(r => setTimeout(r, 15000));
           const retryResponse = await chat(

@@ -501,9 +501,9 @@ export async function getFormattedRelevantMemories(
     const memoriesPromise = findRelevantMemories(tamadachiId, message, limit);
     const timeoutPromise = new Promise<Memory[]>((resolve) =>
       setTimeout(() => {
-        log.warn('Memory retrieval timeout (5s) — continuing without memories');
+        log.warn('Memory retrieval timeout (3s) — continuing without memories');
         resolve([]);
-      }, 5000)
+      }, 3000)
     );
     const memories = await Promise.race([memoriesPromise, timeoutPromise]);
     return formatMemoriesForPrompt(memories);

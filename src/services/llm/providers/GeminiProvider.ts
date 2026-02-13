@@ -3,7 +3,7 @@
 //
 // Gemini est le provider par défaut car :
 // - API gratuite avec limites généreuses
-// - Modèle performant (gemini-2.0-flash)
+// - Modèle performant (gemini-2.0-flash-lite — 1000 RPD free tier)
 // - Bonne compréhension du français
 //
 // Ce provider implémente l'interface commune LLMProvider
@@ -48,7 +48,7 @@ const log = createLogger('Gemini');
 // ============================================================
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-2.0-flash-lite';
 
 // ============================================================
 // PROVIDER
