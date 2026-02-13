@@ -86,6 +86,10 @@ export class GeminiProvider implements LLMProviderInstance {
   /**
    * Envoie un message au LLM et retourne la réponse
    */
+  setModel(model: string): void {
+    this.model = model;
+  }
+
   async generate(request: LLMRequest): Promise<LLMResponse> {
     const startTime = Date.now();
 

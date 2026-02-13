@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings, useTamadachiData, useEvolution } from '../hooks';
-import { THEME } from '../constants/config';
+import { THEME, LLM_CONFIG } from '../constants/config';
 import { LLMProviderName } from '../types';
 
 // ============================================================
@@ -25,6 +25,7 @@ function ProviderCard({
   provider,
   onSetKey,
   onSelect,
+  onSetModel,
 }: {
   provider: {
     name: LLMProviderName;
@@ -35,6 +36,7 @@ function ProviderCard({
   };
   onSetKey: (name: LLMProviderName, key: string) => Promise<boolean>;
   onSelect: (name: LLMProviderName) => void;
+  onSetModel: (name: LLMProviderName, model: string) => void;
 }) {
   const [apiKey, setApiKey] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -60,6 +62,28 @@ function ProviderCard({
         <View style={styles.providerInfo}>
           <Text style={styles.providerName}>{provider.label}</Text>
           <Text style={styles.providerModel}>{provider.model}</Text>
+          {/* Sélecteur de modèle */}
+          {provider.isConfigured && (LLM_CONFIG.providers as any)[provider.name]?.models?.length > 1 && (
+            <View style={styles.modelSelector}>
+              {(LLM_CONFIG.providers as any)[provider.name].models.map((model: string) => (
+                <TouchableOpacity
+                  key={model}
+                  style={[
+                    styles.modelChip,
+                    provider.model === model && styles.modelChipActive,
+                  ]}
+                  onPress={() => onSetModel(provider.name, model)}
+                >
+                  <Text style={[
+                    styles.modelChipText,
+                    provider.model === model && styles.modelChipTextActive,
+                  ]}>
+                    {model.replace('gemini-2.0-', '').replace('gemini-1.5-', '1.5-').replace('claude-sonnet-4-5-20250929', 'Sonnet 4.5').replace('claude-haiku-4-5-20251001', 'Haiku 4.5').replace('gpt-4o-mini', '4o-mini').replace('gpt-4o', '4o')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
         <View style={styles.providerBadges}>
           {provider.isConfigured && (
@@ -132,7 +156,7 @@ interface SettingsScreenProps {
 }
 
 export function SettingsScreen({ onClose }: SettingsScreenProps) {
-  const { setApiKey, setPreferredProvider, setXPMode, getLLMInfo } = useSettings();
+  const { setApiKey, setPreferredProvider, setProviderModel, setXPMode, getLLMInfo } = useSettings();
   const { tamadachi, genome } = useTamadachiData();
   const { stage, totalXP } = useEvolution();
 
@@ -193,6 +217,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
               provider={provider}
               onSetKey={setApiKey}
               onSelect={handleSelectProvider}
+              onSetModel={setProviderModel}
             />
           ))}
         </View>
@@ -339,6 +364,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: THEME.colors.text,
+  },
+  modelSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
+  modelChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  modelChipActive: {
+    backgroundColor: THEME.colors.primary,
+    borderColor: THEME.colors.primary,
+  },
+  modelChipText: {
+    fontSize: 11,
+    color: THEME.colors.textSecondary,
+  },
+  modelChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   providerModel: {
     fontSize: 12,

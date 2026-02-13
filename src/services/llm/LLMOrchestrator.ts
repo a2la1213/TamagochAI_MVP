@@ -60,6 +60,53 @@ async function waitForRateLimit(): Promise<void> {
   lastLLMCallTime = Date.now();
 }
 
+// ============================================================
+// AUTO-ROUTER: choisit le modèle selon la complexité du message
+// ============================================================
+const COMPLEX_KEYWORDS = [
+  'explique', 'explain', 'analyse', 'analyze', 'compare', 'pourquoi', 'why',
+  'détaille', 'detail', 'résume', 'summarize', 'code', 'programme', 'debug',
+  'philosophie', 'histoire', 'science', 'mathématique', 'stratégie',
+  'comment fonctionne', 'how does', 'différence entre', 'difference between',
+  'avantages et inconvénients', 'pros and cons', 'réfléchis', 'think',
+];
+
+const MODEL_TIERS: Record<string, { lite: string; full: string }> = {
+  gemini: { lite: 'gemini-2.0-flash-lite', full: 'gemini-2.0-flash' },
+  claude: { lite: 'claude-haiku-4-5-20251001', full: 'claude-sonnet-4-5-20250929' },
+  openai: { lite: 'gpt-4o-mini', full: 'gpt-4o' },
+  deepseek: { lite: 'deepseek-chat', full: 'deepseek-chat' },
+  perplexity: { lite: 'sonar-pro', full: 'sonar-pro' },
+};
+
+function isComplexMessage(userMessage: string, messageCount: number): boolean {
+  const msg = userMessage.toLowerCase();
+  // Long messages are likely complex
+  if (msg.length > 200) return true;
+  // Many messages = deep conversation
+  if (messageCount > 10) return true;
+  // Check for complex keywords
+  return COMPLEX_KEYWORDS.some(kw => msg.includes(kw));
+}
+
+function autoRouteModel(providerName: string, userMessage: string, messageCount: number): void {
+  const tiers = MODEL_TIERS[providerName];
+  if (!tiers) return;
+  
+  const provider = providers.get(providerName as LLMProviderName);
+  if (!provider || !('setModel' in provider)) return;
+
+  const useFullModel = isComplexMessage(userMessage, messageCount);
+  const targetModel = useFullModel ? tiers.full : tiers.lite;
+  (provider as any).setModel(targetModel);
+  
+  if (useFullModel) {
+    log.info('🧠 Auto-route: complex message → ' + targetModel);
+  } else {
+    log.info('⚡ Auto-route: simple message → ' + targetModel);
+  }
+}
+
 const stats: LLMStats = {
   totalRequests: 0,
   totalErrors: 0,
@@ -175,6 +222,7 @@ export async function chat(
 
     try {
       log.info(`Trying provider: ${providerName} (key: ${provider.getApiKey()?.substring(0, 8)}...)`);
+      autoRouteModel(providerName, request.userMessage, request.messages.length);
       const response = await attemptWithRetry(provider, request);
 
       if (response.success) {
