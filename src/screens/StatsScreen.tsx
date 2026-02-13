@@ -226,8 +226,8 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
             {dreams.map(dream => (
               <View key={dream.id} style={styles.dreamCard}>
                 <View style={styles.dreamHeader}>
-                  <Text style={styles.dreamTitle}>{dream.title}</Text>
-                  {dream.wasShared && <Text style={styles.dreamShared}>raconté</Text>}
+                  <Text style={styles.dreamTitle} numberOfLines={2}>{dream.title}</Text>
+                  {dream.wasShared && <Text style={styles.dreamShared}>raconté ✓</Text>}
                 </View>
                 <Text selectable style={styles.dreamNarrative}>
                   {dream.narrative}
@@ -379,8 +379,10 @@ const styles = StyleSheet.create({
     marginBottom: 8, borderWidth: 1, borderColor: THEME.colors.border,
     flexShrink: 0,
   },
-  dreamHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  dreamTitle: { fontSize: 15, fontWeight: '600', color: THEME.colors.text },
+  dreamHeader: {
+    flexShrink: 1, flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  dreamTitle: {
+    flex: 1, fontSize: 15, fontWeight: '600', color: THEME.colors.text },
   dreamShared: { fontSize: 11, color: THEME.colors.success },
   dreamNarrative: { fontSize: 13, color: THEME.colors.textSecondary, lineHeight: 20, fontStyle: 'italic', flexShrink: 0 },
   dreamDate: { fontSize: 11, color: THEME.colors.textSecondary, marginTop: 6, opacity: 0.6 },

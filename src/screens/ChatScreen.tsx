@@ -42,6 +42,7 @@ export function ChatScreen() {
   const { emoji: emotionEmoji } = useEmotion();
   const { percent: batteryPercent, isCharging } = useBattery();
   const flatListRef = useRef<FlatList>(null);
+  const draftRef = useRef<string>('');
   const isNearBottom = useRef(true);
   const prevMessageCount = useRef(0);
 
@@ -164,7 +165,7 @@ export function ChatScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => setActiveScreen('stats')}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => { setActiveScreen('stats'); }}>
           <Text style={styles.headerIcon}>📊</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -176,7 +177,7 @@ export function ChatScreen() {
           <Text style={styles.headerTitle}>{name}</Text>
           <BatteryIndicator percent={batteryPercent} isCharging={isCharging || false} />
         </View>
-        <TouchableOpacity style={styles.headerButton} onPress={() => setActiveScreen('settings')}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => { setActiveScreen('settings'); }}>
           <Text style={styles.headerIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
@@ -263,6 +264,8 @@ export function ChatScreen() {
         )}
 
         <ChatInput
+          initialText={draftRef.current}
+          onTextChange={(t: string) => { draftRef.current = t; }}
           onSend={(msg, atts) => { sendMessage(msg, atts); setEditingMessage(null); }}
           isGenerating={isGenerating}
           editingMessage={editingMessage}

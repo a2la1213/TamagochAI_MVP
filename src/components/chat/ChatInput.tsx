@@ -21,10 +21,14 @@ interface ChatInputProps {
   onToggleVoiceMode?: () => void;
   speaking?: boolean;
   onStopSpeak?: () => void;
+  initialText?: string;
+  onTextChange?: (text: string) => void;
 }
 
-export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, onCancelEdit, listening, partialText, onMicPress, voiceMode, onToggleVoiceMode, speaking, onStopSpeak }: ChatInputProps) {
-  const [text, setText] = useState('');
+export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, onCancelEdit, listening, partialText, onMicPress, voiceMode, onToggleVoiceMode, speaking, onStopSpeak, initialText, onTextChange }: ChatInputProps) {
+  const [text, setText] = useState(initialText || '');
+  const handleTextChange = useCallback((t: string) => { try { setText(t); onTextChange?.(t); } catch(e) { console.warn('text change error:', e); } }, [onTextChange]);
+
   const [attachments, setAttachments] = useState<Array<{ type: 'image'; uri: string; base64: string; mimeType: string }>>([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const micPulse = useRef(new Animated.Value(1)).current;
@@ -266,7 +270,7 @@ export function ChatInput({ onSend, isGenerating, placeholder, editingMessage, o
         ref={inputRef}
         style={[styles.input, editingMessage ? styles.inputEditing : null, listening ? styles.inputListening : null]}
         value={listening ? (partialText || '') : text}
-        onChangeText={setText}
+        onChangeText={handleTextChange}
         placeholder={listening ? '🎤 Je t\'écoute...' : (placeholder || 'Écris un message...')}
         placeholderTextColor={THEME.colors.textSecondary}
         multiline

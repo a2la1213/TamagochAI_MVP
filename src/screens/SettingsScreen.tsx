@@ -217,7 +217,7 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
               style={styles.debugButton}
               onPress={() => {
                 setXPMode('prototype');
-                Alert.alert('XP Mode', 'Mode Prototype (x10) activé');
+                Alert.alert('XP Mode', 'Mode Prototype (x3) activé');
               }}
             >
               <Text style={styles.debugButtonText}>XP x3</Text>

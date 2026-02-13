@@ -475,6 +475,34 @@ export async function getAllRecentMessages(
 /**
  * Récupère les messages autour d'un message source (contexte de conversation)
  */
+export async function getMessagesPaginated(
+  conversationId: string,
+  limit: number = 30,
+  beforeDate?: string,
+): Promise<Message[]> {
+  const db = await getDB();
+  let rows;
+  if (beforeDate) {
+    rows = await db.getAllAsync<any>(
+      `SELECT * FROM messages
+       WHERE conversation_id = ? AND created_at < ?
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      conversationId, beforeDate, limit,
+    );
+  } else {
+    rows = await db.getAllAsync<any>(
+      `SELECT * FROM messages
+       WHERE conversation_id = ?
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      conversationId, limit,
+    );
+  }
+  // Reverse pour avoir l'ordre chronologique
+  return rows.map(mapRowToMessage).reverse();
+}
+
 export async function getMessagesAroundId(
   conversationId: string,
   messageId: string,

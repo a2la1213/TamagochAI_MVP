@@ -18,6 +18,7 @@ import {
   getTamadachi,
   createTamadachi as dbCreateTamadachi,
   setSetting,
+  getMessagesPaginated,
 } from '../services/database/DatabaseService';
 
 // Core
@@ -120,6 +121,7 @@ export interface TamadachiState {
   isGenerating: boolean;
   isBorn: boolean;
   streamingText: string;
+  hasMoreMessages: boolean;
   error: string | null;
 
   initialize: () => Promise<void>;
@@ -133,6 +135,7 @@ export interface TamadachiState {
   setProviderModel: (provider: LLMProviderName, model: string) => Promise<void>;
   setXPMode: (mode: 'production' | 'prototype' | 'debug') => Promise<void>;
   refreshState: () => Promise<void>;
+  loadMoreMessages: () => Promise<boolean>;
   refreshMessages: () => Promise<void>;
   getProgressData: () => Promise<any>;
   getEmotionalSummary: () => any;
@@ -157,6 +160,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
   isGenerating: false,
   isBorn: false,
   streamingText: '',
+  hasMoreMessages: true,
   error: null,
 
   // ============================================================
@@ -186,7 +190,8 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
       }
 
       await initAllServices(tama);
-      const messages = await getAllMessages(tama.id, 50);
+      const convId = getSessionInfo().conversationId;
+      const messages = convId ? await getMessagesPaginated(convId, 30) : [];
 
       set({
         tamadachi: tama,
@@ -420,7 +425,7 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
 
       // 9. Refresh complet
       const updatedTama = await getTamadachi();
-      const finalMessages = tamadachi ? await getAllMessages(tamadachi.id, 200) : await getActiveMessages();
+      const finalMessages = tamadachi ? await getAllMessages(tamadachi.id, 50) : await getActiveMessages();
       const newEmotion = updateEmotion();
       
       // Vibration émotionnelle
@@ -490,9 +495,27 @@ export const useTamadachiStore = create<TamadachiState>((set, get) => ({
     }
   },
 
+  loadMoreMessages: async () => {
+    const { messages, tamadachi } = get();
+    if (!tamadachi || messages.length === 0) return false;
+
+    const oldestMsg = messages[0];
+    const conversationId = messages[0]?.conversationId;
+    if (!conversationId) return false;
+
+    const olderMessages = await getMessagesPaginated(conversationId, 30, oldestMsg.createdAt);
+    if (olderMessages.length === 0) {
+      set({ hasMoreMessages: false });
+      return false;
+    }
+
+    set({ messages: [...olderMessages, ...messages], hasMoreMessages: olderMessages.length >= 30 });
+    return true;
+  },
+
   refreshMessages: async () => {
     const tama = get().tamadachi;
-    const messages = tama ? await getAllMessages(tama.id, 200) : await getActiveMessages();
+    const messages = tama ? await getAllMessages(tama.id, 50) : await getActiveMessages();
     set({ messages });
   },
 

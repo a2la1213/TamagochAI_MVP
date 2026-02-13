@@ -215,7 +215,7 @@ async function scheduleBackgroundNotifications(): Promise<void> {
     const fallbackMessages: { delay: number; msg: string }[] = [];
     for (const item of contexts) {
       try {
-        const resp = await chat(
+        const llmPromise = chat(
           `Tu es ${name}, un TamadachAI qui vit dans le smartphone de ton humain.
 Contexte: ${item.ctx}
 Écris UN SEUL message de notification push (max 80 caractères). Sois naturel, spontané, toi-même. Pas de guillemets, pas de préfixe.`,
@@ -223,6 +223,8 @@ Contexte: ${item.ctx}
           'notification',
           { temperature: 0.9, maxTokens: 40 },
         );
+        const timeoutP = new Promise(r => setTimeout(() => r({ success: false, content: '' }), 10000));
+        const resp = await Promise.race([llmPromise, timeoutP]) as any;
         if (resp.success && resp.content) {
           fallbackMessages.push({ delay: item.delay, msg: resp.content.trim().slice(0, 100) });
         } else {
