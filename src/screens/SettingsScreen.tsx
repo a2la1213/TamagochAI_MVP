@@ -1,7 +1,7 @@
 // src/screens/SettingsScreen.tsx
 // Écran de paramètres — Configuration LLM, stats, debug
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import {
   View,
   Text,
@@ -161,7 +161,14 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
   const { stage, totalXP } = useEvolution();
 
   const [refreshKey, setRefreshKey] = React.useState(0);
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
   const llmInfo = getLLMInfo();
+
+  // Rafraîchir les stats toutes les 5s quand l'écran est ouvert
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate(), 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSelectProvider = async (name: LLMProviderName) => {
     await setPreferredProvider(name);
