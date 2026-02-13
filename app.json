@@ -21,7 +21,9 @@
         "UIBackgroundModes": [
           "fetch",
           "remote-notification"
-        ]
+        ],
+        "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone."
       }
     },
     "android": {
@@ -34,7 +36,8 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "WAKE_LOCK",
-        "BATTERY_STATS"
+        "BATTERY_STATS",
+        "android.permission.RECORD_AUDIO"
       ],
       "allowBackup": false
     },
@@ -52,10 +55,10 @@
       "expo-speech-recognition"
     ],
     "jsEngine": "jsc",
-    "owner": "a2lagdz",
+    "owner": "tamadachai",
     "extra": {
       "eas": {
-        "projectId": "c3ea2507-ba6f-4176-9cf7-4be5532d14ad"
+        "projectId": "8f265587-6ab1-40e0-9ada-ddd3d4e53116"
       }
     }
   }
