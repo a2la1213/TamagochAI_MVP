@@ -480,13 +480,17 @@ async function buildSystemPrompt(
 
   // Résumé condensé de TOUS les souvenirs
   try {
+    let digestTimer: ReturnType<typeof setTimeout>;
     memoryDigest = await Promise.race([
       getMemoryDigest(tamadachiId),
-      new Promise<string>((resolve) => setTimeout(() => {
-        log.warn('Memory digest timeout (3s) — skipping');
-        resolve('');
-      }, 3000)),
+      new Promise<string>((resolve) => {
+        digestTimer = setTimeout(() => {
+          log.warn('Memory digest timeout (3s) — skipping');
+          resolve('');
+        }, 3000);
+      }),
     ]);
+    clearTimeout(digestTimer!);
   } catch (e) {
     log.warn('Memory digest failed:', e);
   }

@@ -474,13 +474,15 @@ export async function getFormattedRelevantMemories(
   try {
     // Safety timeout: si la recherche de souvenirs prend plus de 5s, on continue sans
     const memoriesPromise = findRelevantMemories(tamadachiId, message, limit);
-    const timeoutPromise = new Promise<Memory[]>((resolve) =>
-      setTimeout(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<Memory[]>((resolve) => {
+      timer = setTimeout(() => {
         log.warn('Memory retrieval timeout (5s) — continuing without memories');
         resolve([]);
-      }, 5000)
-    );
+      }, 5000);
+    });
     const memories = await Promise.race([memoriesPromise, timeoutPromise]);
+    clearTimeout(timer!);
     return formatMemoriesForPrompt(memories);
   } catch (error) {
     log.error('Memory retrieval failed:', error);
