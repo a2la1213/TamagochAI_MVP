@@ -5,4 +5,5 @@ export {
   createOpenAIProvider,
   createDeepSeekProvider,
   createPerplexityProvider,
+  createGroqProvider,
 } from './OpenAICompatibleProvider';

@@ -14,7 +14,7 @@ interface Props {
   onComplete: () => void;
 }
 
-type ProviderChoice = 'gemini' | 'claude' | 'openai' | 'deepseek';
+type ProviderChoice = 'groq' | 'gemini' | 'claude' | 'openai' | 'deepseek';
 
 const PROVIDERS: Array<{
   id: ProviderChoice;
@@ -26,11 +26,26 @@ const PROVIDERS: Array<{
   steps: string[];
 }> = [
   {
+    id: 'groq',
+    name: 'Groq',
+    icon: '🚀',
+    free: true,
+    model: 'llama-3.3-70b',
+    url: 'https://console.groq.com/keys',
+    steps: [
+      '1. Va sur console.groq.com',
+      '2. Crée un compte (Google ou GitHub)',
+      '3. Clique sur "Create API Key"',
+      '4. Donne un nom (ex: TamadachAI)',
+      '5. Copie la clé et colle-la ici',
+    ],
+  },
+  {
     id: 'gemini',
     name: 'Google Gemini',
     icon: '⚡',
     free: true,
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.0-flash-lite',
     url: 'https://aistudio.google.com/apikey',
     steps: [
       '1. Va sur aistudio.google.com/apikey',
@@ -84,7 +99,7 @@ const PROVIDERS: Array<{
 ];
 
 export function ApiSetupScreen({ onComplete }: Props) {
-  const [selectedProvider, setSelectedProvider] = useState<ProviderChoice>('gemini');
+  const [selectedProvider, setSelectedProvider] = useState<ProviderChoice>('groq');
   const [key, setKey] = useState('');
   const [testing, setTesting] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
@@ -121,7 +136,7 @@ export function ApiSetupScreen({ onComplete }: Props) {
           <Text style={styles.title}>Bienvenue sur TamadachAI !</Text>
           <Text style={styles.subtitle}>
             Pour que ton compagnon IA puisse te parler, il a besoin d'une clé API.
-            C'est gratuit avec Gemini !
+            C'est gratuit et ultra rapide avec Groq ! 🚀
           </Text>
         </View>
 

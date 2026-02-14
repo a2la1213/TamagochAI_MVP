@@ -98,6 +98,15 @@ export const LLM_CONFIG = {
       maxTokens: 8192,
       description: 'Français, rapide, bon marché',
     },
+    groq: {
+      name: 'Groq',
+      icon: '🚀',
+      models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+      baseUrl: 'https://api.groq.com/openai/v1',
+      isPaid: false,
+      maxTokens: 8192,
+      description: 'Ultra rapide, gratuit, 14400 req/jour',
+    },
     local: {
       name: 'Local (Offline)',
       icon: '📱',

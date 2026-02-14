@@ -19,6 +19,7 @@ import {
   createOpenAIProvider,
   createDeepSeekProvider,
   createPerplexityProvider,
+  createGroqProvider,
 } from './providers/OpenAICompatibleProvider';
 import { getSetting, setSetting } from '../database/DatabaseService';
 import { createLogger } from '../../utils/helpers';
@@ -30,6 +31,7 @@ const log = createLogger('LLM');
 // ============================================================
 
 const PROVIDER_MODELS: Record<LLMProviderName, string> = {
+  groq: 'llama-3.3-70b-versatile',
   gemini: 'gemini-2.0-flash',
   claude: 'claude-sonnet-4-5-20250929',
   openai: 'gpt-4o-mini',
@@ -42,8 +44,8 @@ const PROVIDER_MODELS: Record<LLMProviderName, string> = {
 // ============================================================
 
 const providers: Map<LLMProviderName, LLMProviderInstance> = new Map();
-let preferredProvider: LLMProviderName = 'gemini';
-let fallbackOrder: LLMProviderName[] = ['gemini', 'deepseek', 'openai', 'claude', 'perplexity'];
+let preferredProvider: LLMProviderName = 'groq';
+let fallbackOrder: LLMProviderName[] = ['groq', 'claude', 'gemini', 'deepseek', 'openai', 'perplexity'];
 let isInitialized = false;
 
 // Rate limiter — minimum 2s entre chaque appel
@@ -75,6 +77,7 @@ const MODEL_TIERS: Record<string, { lite: string; full: string }> = {
   gemini: { lite: 'gemini-2.0-flash-lite', full: 'gemini-2.0-flash' },
   claude: { lite: 'claude-haiku-4-5-20251001', full: 'claude-sonnet-4-5-20250929' },
   openai: { lite: 'gpt-4o-mini', full: 'gpt-4o' },
+  groq: { lite: 'llama-3.3-70b-versatile', full: 'llama-3.3-70b-versatile' },
   deepseek: { lite: 'deepseek-chat', full: 'deepseek-chat' },
   perplexity: { lite: 'sonar-pro', full: 'sonar-pro' },
 };
@@ -146,6 +149,7 @@ export async function initLLM(): Promise<void> {
   providers.set('openai', createOpenAIProvider());
   providers.set('deepseek', createDeepSeekProvider());
   providers.set('perplexity', createPerplexityProvider());
+  providers.set('groq', createGroqProvider());
 
   log.info('🔑 Loading saved API keys...');
   // Charger les clés API sauvegardées
@@ -308,6 +312,7 @@ export async function setApiKey(provider: LLMProviderName, key: string): Promise
     providers.set('openai', createOpenAIProvider());
     providers.set('deepseek', createDeepSeekProvider());
     providers.set('perplexity', createPerplexityProvider());
+  providers.set('groq', createGroqProvider());
     log.info('Providers instantiated via setApiKey');
   }
 
@@ -382,6 +387,7 @@ export function getAllSupportedProviders(): Array<{
     openai: '🟢 OpenAI',
     deepseek: '🔵 DeepSeek',
     perplexity: '🔍 Perplexity',
+    groq: '🚀 Groq',
   };
 
   return (Object.keys(PROVIDER_MODELS) as LLMProviderName[]).map(name => ({
@@ -410,6 +416,7 @@ function ensureInitialized(): void {
       providers.set('openai', createOpenAIProvider());
       providers.set('deepseek', createDeepSeekProvider());
       providers.set('perplexity', createPerplexityProvider());
+  providers.set('groq', createGroqProvider());
     }
     updateFallbackOrder();
     isInitialized = true;
@@ -439,7 +446,7 @@ function updateFallbackOrder(): void {
   }
 
   // Ajouter les fallbacks dans l'ordre par défaut
-  const defaultOrder: LLMProviderName[] = ['gemini', 'deepseek', 'openai', 'claude', 'perplexity'];
+  const defaultOrder: LLMProviderName[] = ['groq', 'claude', 'gemini', 'deepseek', 'openai', 'perplexity'];
   for (const name of defaultOrder) {
     if (!order.includes(name) && available.includes(name)) {
       order.push(name);

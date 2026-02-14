@@ -216,7 +216,13 @@ export function SettingsScreen({ onClose }: SettingsScreenProps) {
           <Text style={styles.sectionTitle}>🤖 Providers LLM</Text>
           <Text style={styles.sectionDescription}>
             Configure au moins un provider pour que ton TamadachAI puisse te parler.
-            Gemini est gratuit !
+            
+            🚀 Groq est recommandé (gratuit, ultra rapide) :
+            1. Va sur console.groq.com
+            2. Crée un compte (Google/GitHub)  
+            3. Clique 'Create API Key'
+            4. Copie la clé ici
+
           </Text>
           {llmInfo.all.map((provider: any) => (
             <ProviderCard

@@ -313,3 +313,17 @@ export function createPerplexityProvider(apiKey: string = '', model?: string): O
     apiKey,
   });
 }
+
+
+/**
+ * Crée un provider Groq (Llama 3.3 70B — ultra rapide, 14400 RPD gratuit)
+ * API 100% compatible OpenAI
+ */
+export function createGroqProvider(apiKey: string = '', model?: string): OpenAICompatibleProvider {
+  return new OpenAICompatibleProvider({
+    name: 'groq' as LLMProviderName,
+    apiBase: 'https://api.groq.com/openai/v1',
+    model: model || 'llama-3.3-70b-versatile',
+    apiKey,
+  });
+}

@@ -9,7 +9,8 @@ export type LLMProviderName =
   | 'claude'
   | 'openai'
   | 'deepseek'
-  | 'perplexity';
+  | 'perplexity'
+  | 'groq';
 
 // Legacy alias (rétrocompatibilité)
 export type LLMProvider = LLMProviderName;
