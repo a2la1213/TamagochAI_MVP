@@ -65,7 +65,7 @@ export const LLM_CONFIG = {
     gemini: {
       name: 'Gemini',
       icon: '⚡',
-      models: ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'],
+      models: ['gemini-2.0-flash-lite'],
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
       isPaid: false,
       maxTokens: 8192,
@@ -74,7 +74,7 @@ export const LLM_CONFIG = {
     claude: {
       name: 'Claude',
       icon: '🟣',
-      models: ['claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001'],
+      models: ['claude-sonnet-4-5-20250929'],
       baseUrl: 'https://api.anthropic.com/v1/messages',
       isPaid: true,
       maxTokens: 8192,
@@ -101,7 +101,7 @@ export const LLM_CONFIG = {
     groq: {
       name: 'Groq',
       icon: '🚀',
-      models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+      models: ['meta-llama/llama-4-scout-17b-16e-instruct'],
       baseUrl: 'https://api.groq.com/openai/v1',
       isPaid: false,
       maxTokens: 8192,

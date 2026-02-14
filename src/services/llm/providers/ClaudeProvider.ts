@@ -213,12 +213,24 @@ export class ClaudeProvider implements LLMProviderInstance {
     const blocks: any[] = [];
     for (const att of msg.attachments) {
       if (att.type === 'image' && att.imageBase64) {
+        // Strip data:xxx;base64, prefix if present
+        let imgData = att.imageBase64;
+        let imgMime = att.mimeType || 'image/jpeg';
+        if (imgData.startsWith('data:')) {
+          const ci = imgData.indexOf(',');
+          if (ci > 0) {
+            const pfx = imgData.substring(5, ci);
+            const si = pfx.indexOf(';');
+            if (si > 0) imgMime = pfx.substring(0, si);
+            imgData = imgData.substring(ci + 1);
+          }
+        }
         blocks.push({
           type: 'image',
           source: {
             type: 'base64',
-            media_type: att.mimeType || 'image/jpeg',
-            data: att.imageBase64,
+            media_type: imgMime,
+            data: imgData,
           },
         });
       }

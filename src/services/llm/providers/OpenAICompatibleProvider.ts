@@ -211,16 +211,33 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
   }
 
   private buildRequestBody(request: LLMRequest): any {
-    // Format standard OpenAI chat/completions
+    // Format standard OpenAI chat/completions (avec support vision)
     const allMsgs = [
-      ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt }] : []),
+      ...(request.systemPrompt ? [{ role: 'system' as const, content: request.systemPrompt, attachments: undefined as any }] : []),
       ...request.messages,
-      { role: 'user' as const, content: request.userMessage },
+      { role: 'user' as const, content: request.userMessage, attachments: request.userAttachments },
     ];
-    const messages = allMsgs.map((msg: any) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    const messages = allMsgs.map((msg: any) => {
+      // Si le message a des images, utiliser le format multimodal OpenAI
+      if (msg.attachments && msg.attachments.length > 0) {
+        const parts: any[] = [{ type: 'text', text: msg.content }];
+        for (const att of msg.attachments) {
+          if (att.type === 'image' && att.imageBase64) {
+            // Strip le prefix data:... si déjà présent
+            let base64Data = att.imageBase64;
+            if (base64Data.startsWith('data:')) {
+              // Déjà au bon format
+              parts.push({ type: 'image_url', image_url: { url: base64Data } });
+            } else {
+              const mimeType = att.mimeType || 'image/jpeg';
+              parts.push({ type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + base64Data } });
+            }
+          }
+        }
+        return { role: msg.role, content: parts };
+      }
+      return { role: msg.role, content: msg.content };
+    });
 
     // Si le provider ne supporte pas le rôle system, fusionner avec le premier user message
     if (this.config.supportsSystemRole === false) {
@@ -285,7 +302,7 @@ export function createOpenAIProvider(apiKey: string = '', model?: string): OpenA
   return new OpenAICompatibleProvider({
     name: 'openai' as LLMProviderName,
     apiBase: 'https://api.openai.com/v1',
-    model: model || 'gpt-5.2',
+    model: model || 'gpt-4o',
     apiKey,
   });
 }
@@ -323,7 +340,7 @@ export function createGroqProvider(apiKey: string = '', model?: string): OpenAIC
   return new OpenAICompatibleProvider({
     name: 'groq' as LLMProviderName,
     apiBase: 'https://api.groq.com/openai/v1',
-    model: model || 'llama-3.3-70b-versatile',
+    model: model || 'meta-llama/llama-4-scout-17b-16e-instruct',
     apiKey,
   });
 }

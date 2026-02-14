@@ -31,7 +31,7 @@ const log = createLogger('LLM');
 // ============================================================
 
 const PROVIDER_MODELS: Record<LLMProviderName, string> = {
-  groq: 'llama-3.3-70b-versatile',
+  groq: 'meta-llama/llama-4-scout-17b-16e-instruct',
   gemini: 'gemini-2.0-flash',
   claude: 'claude-sonnet-4-5-20250929',
   openai: 'gpt-4o-mini',
@@ -226,7 +226,8 @@ export async function chat(
 
     try {
       log.info(`Trying provider: ${providerName} (key: ${provider.getApiKey()?.substring(0, 8)}...)`);
-      autoRouteModel(providerName, request.userMessage, request.messages.length);
+      // autoRouteModel disabled — 1 model per provider
+      // autoRouteModel(providerName, request.userMessage, request.messages.length);
       const response = await attemptWithRetry(provider, request);
 
       if (response.success) {

@@ -30,7 +30,7 @@ const PROVIDERS: Array<{
     name: 'Groq',
     icon: '🚀',
     free: true,
-    model: 'llama-3.3-70b',
+    model: 'llama-4-scout',
     url: 'https://console.groq.com/keys',
     steps: [
       '1. Va sur console.groq.com',
@@ -59,7 +59,7 @@ const PROVIDERS: Array<{
     name: 'Anthropic Claude',
     icon: '🟣',
     free: false,
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-4-5-20250929',
     url: 'https://console.anthropic.com/settings/keys',
     steps: [
       '1. Va sur console.anthropic.com',
@@ -73,7 +73,7 @@ const PROVIDERS: Array<{
     name: 'OpenAI',
     icon: '🟢',
     free: false,
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o',
     url: 'https://platform.openai.com/api-keys',
     steps: [
       '1. Va sur platform.openai.com',
