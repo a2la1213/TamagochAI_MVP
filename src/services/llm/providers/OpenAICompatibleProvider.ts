@@ -257,7 +257,7 @@ export class OpenAICompatibleProvider implements LLMProviderInstance {
       model: this.config.model,
       messages,
       temperature: request.temperature ?? LLM_CONFIG.defaultParams.temperature,
-      max_tokens: request.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens,
+      max_tokens: Math.min(request.maxTokens ?? LLM_CONFIG.defaultParams.maxTokens, this.config.name === 'groq' ? 4096 : 8192),
       ...(this.config.extraBodyParams || {}),
     };
   }
