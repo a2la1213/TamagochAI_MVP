@@ -103,6 +103,9 @@ export function GenomeReveal({ visible, genome, name, archetype, onComplete }: G
             <Text style={styles.dna}>🧬</Text>
             <Text style={styles.title}>ADN de {name}</Text>
             <Text style={styles.subtitle}>Traits uniques de naissance</Text>
+            {archetype ? (
+              <Text style={styles.archetypeText}>{archetype}</Text>
+            ) : null}
           </Animated.View>
 
           {/* Barres de traits */}

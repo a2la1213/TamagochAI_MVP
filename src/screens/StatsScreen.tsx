@@ -15,6 +15,7 @@ import { useTamadachiData, useEvolution, useEmotion, useBattery,
 } from '../hooks';
 import { useTamadachiStore } from '../stores/useTamadachiStore';
 import { THEME } from '../constants/config';
+import { analyzePersonality } from '../services/core/PersonalityService';
 import { getAvatarImage } from '../constants/avatar';
 import { EVOLUTION_STAGES } from '../constants/evolution';
 import { getAllDreams, getRecentDreams } from '../services/core/DreamService';
@@ -66,6 +67,7 @@ interface StatsScreenProps {
 
 export function StatsScreen({ onClose }: StatsScreenProps) {
   const { tamadachi, genome, stats, emotion } = useTamadachiData();
+  const archetype = genome ? analyzePersonality(genome).archetype : null;
   const { percent: batteryPercent, isCharging } = useBattery();
   const { stage, totalXP } = useEvolution();
   const { emoji, primary, intensity } = useEmotion();
@@ -161,6 +163,7 @@ export function StatsScreen({ onClose }: StatsScreenProps) {
         {genome && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>🧬 Génome</Text>
+            {archetype && <Text style={styles.archetypeLabel}>{archetype}</Text>}
             <View style={styles.card}>
               <GenomeTrait label="Social" value={genome.social} color="#3B82F6" />
               <GenomeTrait label="Cognitif" value={genome.cognitive} color="#8B5CF6" />
@@ -305,6 +308,7 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   section: { paddingHorizontal: 20, paddingTop: 24 },
+  archetypeLabel: { fontSize: 15, fontWeight: '700', color: '#3B82F6', textAlign: 'center', marginBottom: 8, paddingHorizontal: 10 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: THEME.colors.text, marginBottom: 12 },
 
   // Evolution

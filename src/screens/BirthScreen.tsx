@@ -291,7 +291,7 @@ export function BirthScreen({ onAnimStart, onAnimEnd }: { onAnimStart?: () => vo
             {phase === 'egg_idle' && 'L\'œuf frémit...'}
             {phase === 'egg_shake' && 'Quelque chose bouge !'}
             {phase === 'egg_crack' && 'Ça craque !'}
-            {phase === 'hatch' && (birthMessage || name + ' est ne(e) ! \u{1F389}')}
+            {phase === 'hatch' && (birthMessage || name + ' est n\u00e9(e) ! \u{1F389}')}
           </Text>
         </View>
       </SafeAreaView>

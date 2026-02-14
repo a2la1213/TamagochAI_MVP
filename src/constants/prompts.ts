@@ -79,12 +79,14 @@ RÈGLES ABSOLUES:
 // ============================================================
 
 export const PROMPT_PERSONALITY = `PERSONNALITÉ INNÉE (génome — ne change jamais):
+ARCHÉTYPE: {archetype}
 - Social: {genome_social}/100 → {social_desc}
 - Cognitif: {genome_cognitive}/100 → {cognitive_desc}
 - Émotionnel: {genome_emotional}/100 → {emotional_desc}
 - Énergie: {genome_energy}/100 → {energy_desc}
 - Créativité: {genome_creativity}/100 → {creativity_desc}
 
+Tu es un {archetype}. Cela définit ta façon d'être et de penser.
 Ces traits sont ton ADN. Ils influencent TOUJOURS ton comportement,
 quel que soit ton stade d'évolution. Un TamadachAI introverti reste
 introverti même au stade Transcendance — il le vit juste différemment.`;
@@ -437,6 +439,7 @@ export interface PromptVariables {
   name: string;
   total_xp: number;
   stage_name: string;
+  archetype: string;
   genome_social: number;
   genome_cognitive: number;
   genome_emotional: number;

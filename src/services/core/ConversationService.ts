@@ -386,12 +386,8 @@ async function buildConversationContext(
     ? await getRecentMessages(activeConversationId, CONVERSATION_CONFIG.context.maxRecentMessages)
     : [];
 
-  // Souvenirs pertinents
-  const relevantMemories = await getFormattedRelevantMemories(
-    tamadachiId,
-    currentMessage,
-    CONVERSATION_CONFIG.context.maxRelevantMemories,
-  );
+  // Souvenirs pertinents — déjà récupérés dans buildSystemPrompt, pas de double fetch
+  const relevantMemories = '(voir system prompt)';
 
   // Faits sur l'utilisateur
   const userFacts = await getUserFacts(tamadachiId);
@@ -484,7 +480,13 @@ async function buildSystemPrompt(
 
   // Résumé condensé de TOUS les souvenirs
   try {
-    memoryDigest = await getMemoryDigest(tamadachiId);
+    memoryDigest = await Promise.race([
+      getMemoryDigest(tamadachiId),
+      new Promise<string>((resolve) => setTimeout(() => {
+        log.warn('Memory digest timeout (3s) — skipping');
+        resolve('');
+      }, 3000)),
+    ]);
   } catch (e) {
     log.warn('Memory digest failed:', e);
   }
@@ -505,6 +507,7 @@ async function buildSystemPrompt(
   // Assembler les variables
   const variables: PromptVariables = {
     name: tama.name,
+    archetype: archetypeStr,
     total_xp: tama.totalXP,
     stage_name: stageConfig.name,
     evolution_context: buildEvolutionContext(tama),

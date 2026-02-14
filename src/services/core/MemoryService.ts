@@ -495,12 +495,12 @@ export async function getFormattedRelevantMemories(
  */
 export async function getMemoryDigest(tamadachiId: string): Promise<string> {
   try {
-    // === MÉMOIRE ACTIVE (toujours dans le prompt) ===
-    const activeMemories = await getMemoriesByTier(tamadachiId, 'active', 20);
-    const flashMemories = await queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 20 });
-
-    // === MÉMOIRE CONSOLIDÉE (résumés) ===
-    const consolidatedMemories = await getMemoriesByTier(tamadachiId, 'consolidated', 10);
+    // === TOUTES LES COUCHES EN PARALLÈLE ===
+    const [activeMemories, flashMemories, consolidatedMemories] = await Promise.all([
+      getMemoriesByTier(tamadachiId, 'active', 20),
+      queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 20 }),
+      getMemoriesByTier(tamadachiId, 'consolidated', 10),
+    ]);
 
     const lines: string[] = [];
     const total = activeMemories.length + flashMemories.length + consolidatedMemories.length;
@@ -605,12 +605,11 @@ export async function reinforceMemory(memoryId: string): Promise<void> {
  */
 export async function reinforceByTheme(tamadachiId: string, theme: string): Promise<number> {
   try {
-    const related = await findRelevantMemories(tamadachiId, theme, 10);
+    const related = await findRelevantMemories(tamadachiId, theme, 5);
     let reinforced = 0;
-    for (const mem of related) {
-      await reinforceMemory(mem.id);
-      reinforced++;
-    }
+    // Renforcer en parallèle (pas séquentiel)
+    await Promise.all(related.map(mem => reinforceMemory(mem.id)));
+    reinforced = related.length;
     if (reinforced > 0) {
       log.info(`🔄 Reinforced ${reinforced} memories for theme: "${theme}"`);
     }
