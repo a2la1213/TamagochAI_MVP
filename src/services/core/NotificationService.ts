@@ -8,6 +8,7 @@
 // - Conscience : le TamadachAI sait ce qu'il a envoyé
 
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import {
   getSetting,
   insertMessage,
@@ -80,12 +81,22 @@ export async function initNotifications(): Promise<void> {
     }
 
     // Handler pour les notifications reçues
+    // Channel Android (obligatoire Android 8+)
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('tamadachi', {
+        name: 'TamadachAI',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        sound: 'default',
+      });
+    }
+
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: false,  // Pas de popup en foreground
-        shouldPlaySound: false,
+        shouldShowAlert: true,
+        shouldPlaySound: true,
         shouldSetBadge: true,
-        shouldShowBanner: false,
+        shouldShowBanner: true,
         shouldShowList: true,
       }),
     });
@@ -455,6 +466,7 @@ async function sendNotification(
         categoryIdentifier: 'tamadachi_message',
       },
       trigger: null,
+      ...(Platform.OS === 'android' ? { channelId: 'tamadachi' } : {}),
     });
 
     // Sauvegarder dans l'historique

@@ -55,10 +55,10 @@
       "expo-speech-recognition"
     ],
     "jsEngine": "jsc",
-    "owner": "tamadachai",
+    "owner": "tamadachaimvp",
     "extra": {
       "eas": {
-        "projectId": "8f265587-6ab1-40e0-9ada-ddd3d4e53116"
+        "projectId": "ad38397e-8119-4f4f-bda4-7ea5a80e3380"
       }
     }
   }

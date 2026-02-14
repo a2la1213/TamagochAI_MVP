@@ -6,6 +6,7 @@ const log = createLogger('Location');
 
 let lastLocation: { city: string; country: string } | null = null;
 let lastUpdate = 0;
+let fetchingPromise: Promise<string> | null = null;
 
 /**
  * Récupère la localisation approximative (ville)
@@ -16,6 +17,22 @@ export async function getApproxLocation(): Promise<string> {
     if (lastLocation && Date.now() - lastUpdate < 30 * 60 * 1000) {
       return `${lastLocation.city}, ${lastLocation.country}`;
     }
+
+    // Empêcher les appels concurrents (race condition)
+    if (fetchingPromise) return fetchingPromise;
+    fetchingPromise = _fetchLocation();
+    const result = await fetchingPromise;
+    fetchingPromise = null;
+    return result;
+  } catch (e) {
+    fetchingPromise = null;
+    log.warn('Location failed:', e);
+    return 'non disponible';
+  }
+}
+
+async function _fetchLocation(): Promise<string> {
+  try {
 
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') return 'non disponible';
@@ -38,7 +55,7 @@ export async function getApproxLocation(): Promise<string> {
 
     return 'non disponible';
   } catch (e) {
-    log.warn('Location failed:', e);
+    log.warn('Location fetch error:', e);
     return 'non disponible';
   }
 }

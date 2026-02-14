@@ -14,7 +14,7 @@ interface Props {
   onComplete: () => void;
 }
 
-type ProviderChoice = 'groq' | 'gemini' | 'claude' | 'openai' | 'deepseek';
+type ProviderChoice = 'groq' | 'gemini' | 'claude' | 'openai' | 'deepseek' | 'perplexity';
 
 const PROVIDERS: Array<{
   id: ProviderChoice;
@@ -94,6 +94,19 @@ const PROVIDERS: Array<{
       '2. Crée un compte (crédits offerts)',
       '3. Va dans API Keys',
       '4. Crée une clé et colle-la ici',
+    ],
+  },
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    icon: '🔍',
+    free: false,
+    model: 'Sonar Pro',
+    url: 'https://www.perplexity.ai/settings/api',
+    steps: [
+      'Aller sur perplexity.ai/settings/api',
+      'Créer un compte ou se connecter',
+      'Générer une clé API',
     ],
   },
 ];

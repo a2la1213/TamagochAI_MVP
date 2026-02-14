@@ -490,7 +490,7 @@ function generateFallbackMessage(): string {
 
 
 export async function hasAnyApiKey(): Promise<boolean> {
-  const providers: LLMProviderName[] = ['gemini', 'claude', 'openai', 'deepseek', 'perplexity'];
+  const providers: LLMProviderName[] = ['groq', 'gemini', 'claude', 'openai', 'deepseek', 'perplexity'];
   for (const name of providers) {
     const key = await getSetting(`api_key_${name}`);
     if (key && key.trim().length > 5) return true;
