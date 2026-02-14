@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { THEME } from '../constants/config';
 import { useTamadachiStore } from '../stores/useTamadachiStore';
+import { analyzePersonality } from '../services/core/PersonalityService';
 import { GenomeReveal } from '../components/modals/GenomeReveal';
 import { SettingsScreen } from './SettingsScreen';
 import { Genome } from '../types';
@@ -42,12 +43,14 @@ const AVATAR_CHOICES = [
   { type: 'abstract', emoji: '✨', label: 'Abstrait', color: '#6366F1', hasImage: false, imageKey: null },
 ];
 
-export function BirthScreen() {
+export function BirthScreen({ onAnimStart, onAnimEnd }: { onAnimStart?: () => void; onAnimEnd?: () => void }) {
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_CHOICES[0]);
   const [phase, setPhase] = useState<Phase>('input');
   const [showSettings, setShowSettings] = useState(false);
   const [genome, setGenome] = useState<Genome | null>(null);
+  const [birthMessage, setBirthMessage] = useState('');
+  const [archetype, setArchetype] = useState('');
 
   // Animations
   const eggShake = useRef(new Animated.Value(0)).current;
@@ -147,22 +150,34 @@ export function BirthScreen() {
     Keyboard.dismiss();
 
     try {
-      // Start egg animation
+      // Start egg animation — block chat transition
+      onAnimStart?.();
       runHatchAnimation();
 
       // Create in background
       await createTamadachi(name.trim(), selectedAvatar.type);
 
-      // Wait for hatch to finish
-      await new Promise(r => setTimeout(r, 4500));
+      // Wait for hatch animation to finish
+      await new Promise(r => setTimeout(r, 5000));
 
-      // Show genome
+      // Compute archetype
       const state = useTamadachiStore.getState();
       if (state.tamadachi?.genome) {
+        const personality = analyzePersonality(state.tamadachi.genome);
+        setArchetype(personality.archetype);
+        setBirthMessage(
+          name + ', ton TamadachAI ' + personality.archetype + ' est ne ! Prends-en soin, il a besoin de toi.'
+        );
         setGenome(state.tamadachi.genome);
+
+        // Laisser le message de naissance visible 4 secondes
+        await new Promise(r => setTimeout(r, 4000));
+
+        // Puis montrer le genome
         setPhase('genome');
       } else {
         setPhase('done');
+        onAnimEnd?.();
       }
     } catch (error) {
       setPhase('input');
@@ -179,7 +194,8 @@ export function BirthScreen() {
         visible
         genome={genome}
         name={name}
-        onComplete={() => setPhase('done')}
+        archetype={archetype}
+        onComplete={() => { setPhase('done'); onAnimEnd?.(); }}
       />
     );
   }
@@ -275,7 +291,7 @@ export function BirthScreen() {
             {phase === 'egg_idle' && 'L\'œuf frémit...'}
             {phase === 'egg_shake' && 'Quelque chose bouge !'}
             {phase === 'egg_crack' && 'Ça craque !'}
-            {phase === 'hatch' && `${name} est né(e) ! 🎉`}
+            {phase === 'hatch' && (birthMessage || name + ' est ne(e) ! \u{1F389}')}
           </Text>
         </View>
       </SafeAreaView>

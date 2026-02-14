@@ -329,52 +329,27 @@ export async function findRelevantMemories(
     }
   };
 
-  // 1. COUCHE RÉCENTE — Les 8 derniers souvenirs (mémoire courte)
-  try {
-    const recentMemories = await queryMemories(tamadachiId, {
-      orderBy: 'recent',
-      limit: 8,
-    });
-    addUnique(recentMemories);
-    // log supprimé (trop verbeux)
-  } catch (e) {
-    log.info('Recent memories query failed');
-  }
+  // Lancer les 3 premières couches EN PARALLELE (au lieu de séquentiel)
+  const safeQuery = async (fn: () => Promise<Memory[]>): Promise<Memory[]> => {
+    try { return await fn(); } catch (e) { return []; }
+  };
 
-  // 2. COUCHE FTS — Recherche par mots-clés du message
-  if (keywords.length > 0) {
-    // Essayer chaque mot-clé individuellement si le OR échoue
-    const searchQuery = keywords.join(' OR ');
-    try {
-      const ftsResults = await searchMemories(tamadachiId, searchQuery, Math.ceil(limit / 3));
-      addUnique(ftsResults);
-      // log supprimé (trop verbeux)
-    } catch (error) {
-      // Essayer mot par mot en fallback
-      for (const kw of keywords.slice(0, 5)) {
-        try {
-          const kwResults = await searchMemories(tamadachiId, kw, 3);
-          addUnique(kwResults);
-        } catch (e) { /* ignore individual failures */ }
-      }
-      // log supprimé
-    }
-  }
+  const [recentMemories, ftsResults, flashMemories] = await Promise.all([
+    // 1. COUCHE RÉCENTE
+    safeQuery(() => queryMemories(tamadachiId, { orderBy: 'recent', limit: 8 })),
+    // 2. COUCHE FTS
+    keywords.length > 0
+      ? safeQuery(() => searchMemories(tamadachiId, keywords.slice(0, 3).join(' OR '), Math.ceil(limit / 3)))
+      : Promise.resolve([]),
+    // 3. COUCHE FLASH
+    safeQuery(() => queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 5 })),
+  ]);
 
-  // 3. COUCHE FLASH — Les flash memories (moments forts)
-  try {
-    const flashMemories = await queryMemories(tamadachiId, {
-      type: 'flash',
-      orderBy: 'importance',
-      limit: 5,
-    });
-    addUnique(flashMemories);
-    log.info(`Memory layer 3 (flash): ${flashMemories.length} found`);
-  } catch (e) {
-    log.info('Flash memories query failed');
-  }
+  addUnique(recentMemories);
+  addUnique(ftsResults);
+  addUnique(flashMemories);
 
-  // 4. COUCHE IMPORTANCE — Les souvenirs les plus importants (tous types)
+  // 4. COUCHE IMPORTANCE — seulement si on a encore de la place
   const remaining = limit - results.length;
   if (remaining > 0) {
     const topMemories = await getTopMemories(tamadachiId, remaining + 5);
@@ -501,9 +476,9 @@ export async function getFormattedRelevantMemories(
     const memoriesPromise = findRelevantMemories(tamadachiId, message, limit);
     const timeoutPromise = new Promise<Memory[]>((resolve) =>
       setTimeout(() => {
-        log.warn('Memory retrieval timeout (3s) — continuing without memories');
+        log.warn('Memory retrieval timeout (5s) — continuing without memories');
         resolve([]);
-      }, 3000)
+      }, 5000)
     );
     const memories = await Promise.race([memoriesPromise, timeoutPromise]);
     return formatMemoriesForPrompt(memories);

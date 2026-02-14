@@ -100,6 +100,7 @@ import {
   formatBattery,
   truncate,
 } from '../../utils/helpers';
+import { analyzePersonality } from './PersonalityService';
 import { getCachedLocation } from '../sensors/LocationService';
 import { getNotificationDigest } from './NotificationService';
 import { getSensorDigest } from '../sensors/SensorService';
@@ -437,6 +438,8 @@ async function buildSystemPrompt(
   const emotion = getCurrentEmotion();
   const mood = getMood();
   const traitDescriptions = describeAllTraits(tama.genome);
+  const personality = analyzePersonality(tama.genome);
+  const archetypeStr = personality.archetype;
   const stageConfig = EVOLUTION_STAGES[tama.stage as EvolutionStage];
 
   // Récupérer les souvenirs formatés

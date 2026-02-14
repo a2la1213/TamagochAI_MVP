@@ -44,7 +44,7 @@ const PROVIDERS: Array<{
     id: 'gemini',
     name: 'Google Gemini',
     icon: '⚡',
-    free: true,
+    free: false,
     model: 'gemini-2.0-flash-lite',
     url: 'https://aistudio.google.com/apikey',
     steps: [
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   providerCard: {
-    width: '47%',
+    width: '48%',
     backgroundColor: THEME.colors.surface,
     borderRadius: 12,
     padding: 14,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   providerName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: THEME.colors.text,
     textAlign: 'center',
@@ -333,9 +333,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   providerModel: {
-    fontSize: 10,
+    fontSize: 9,
     color: THEME.colors.textSecondary,
     marginTop: 4,
+    textAlign: 'center',
   },
   setupSection: {
     backgroundColor: THEME.colors.surface,

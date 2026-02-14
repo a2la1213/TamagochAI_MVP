@@ -18,6 +18,7 @@ interface GenomeRevealProps {
   visible: boolean;
   genome: Genome;
   name: string;
+  archetype?: string;
   onComplete: () => void;
 }
 
@@ -38,7 +39,7 @@ const TRAITS: TraitInfo[] = [
   { key: 'creativity', label: 'Créativité', emoji: '🎨', lowLabel: 'Pragmatique', highLabel: 'Créatif', color: '#10B981' },
 ];
 
-export function GenomeReveal({ visible, genome, name, onComplete }: GenomeRevealProps) {
+export function GenomeReveal({ visible, genome, name, archetype, onComplete }: GenomeRevealProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const titleAnim = useRef(new Animated.Value(0)).current;
   const barAnims = useRef(TRAITS.map(() => new Animated.Value(0))).current;
@@ -168,6 +169,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: THEME.colors.text,
     textAlign: 'center',
+  },
+  archetypeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.colors.primary,
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 10,
   },
   subtitle: {
     fontSize: 13,

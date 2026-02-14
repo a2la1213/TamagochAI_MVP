@@ -19,6 +19,7 @@ registerBackgroundTask();
 export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [needsApiSetup, setNeedsApiSetup] = useState(false);
+  const [birthAnimating, setBirthAnimating] = useState(false);
   const initialize = useTamadachiStore(s => s.initialize);
   const tamadachi = useTamadachiStore(s => s.tamadachi);
   const isInitialized = useTamadachiStore(s => s.isInitialized);
@@ -75,10 +76,10 @@ export default function App() {
       <StatusBar style="light" />
       {needsApiSetup ? (
         <ApiSetupScreen onComplete={() => setNeedsApiSetup(false)} />
-      ) : isInitialized && tamadachi ? (
+      ) : isInitialized && tamadachi && !birthAnimating ? (
         <ChatScreen />
       ) : (
-        <BirthScreen />
+        <BirthScreen onAnimStart={() => setBirthAnimating(true)} onAnimEnd={() => setBirthAnimating(false)} />
       )}
     </SafeAreaProvider>
   );

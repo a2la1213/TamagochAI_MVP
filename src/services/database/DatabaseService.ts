@@ -79,6 +79,8 @@ export async function initDatabase(): Promise<void> {
       "ALTER TABLE memories ADD COLUMN consolidated_into TEXT",
       "ALTER TABLE memories ADD COLUMN last_reinforced_at TEXT",
       "ALTER TABLE memories ADD COLUMN reinforcement_count INTEGER NOT NULL DEFAULT 0",
+      "CREATE INDEX IF NOT EXISTS idx_memories_tamadachi_recent ON memories(tamadachi_id, created_at DESC)",
+      "CREATE INDEX IF NOT EXISTS idx_memories_tamadachi_type ON memories(tamadachi_id, type, importance DESC)",
     ];
     for (const sql of alterMigrations) {
       try { await db.runAsync(sql); } catch (_) { /* duplicate column = OK */ }
