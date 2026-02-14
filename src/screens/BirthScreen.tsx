@@ -166,7 +166,7 @@ export function BirthScreen({ onAnimStart, onAnimEnd }: { onAnimStart?: () => vo
         const personality = analyzePersonality(state.tamadachi.genome);
         setArchetype(personality.archetype);
         setBirthMessage(
-          name + ', ton TamadachAI ' + personality.archetype + ' est ne ! Prends-en soin, il a besoin de toi.'
+          name + ', ton TamadachAI ' + personality.archetype + ' est n\u00e9 ! Prends-en soin, il a besoin de toi.'
         );
         setGenome(state.tamadachi.genome);
 

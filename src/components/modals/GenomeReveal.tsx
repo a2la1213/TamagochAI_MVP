@@ -32,11 +32,11 @@ interface TraitInfo {
 }
 
 const TRAITS: TraitInfo[] = [
-  { key: 'social', label: 'Social', emoji: '💬', lowLabel: 'Introverti', highLabel: 'Extraverti', color: '#3B82F6' },
-  { key: 'cognitive', label: 'Cognitif', emoji: '🧠', lowLabel: 'Intuitif', highLabel: 'Analytique', color: '#8B5CF6' },
+  { key: 'social', label: 'Social', emoji: '💬', lowLabel: 'Intro', highLabel: 'Extra', color: '#3B82F6' },
+  { key: 'cognitive', label: 'Cognitif', emoji: '🧠', lowLabel: 'Intuitif', highLabel: 'Analytiq.', color: '#8B5CF6' },
   { key: 'emotional', label: 'Émotionnel', emoji: '❤️', lowLabel: 'Stoïque', highLabel: 'Sensible', color: '#EC4899' },
   { key: 'energy', label: 'Énergie', emoji: '⚡', lowLabel: 'Calme', highLabel: 'Hyperactif', color: '#F59E0B' },
-  { key: 'creativity', label: 'Créativité', emoji: '🎨', lowLabel: 'Pragmatique', highLabel: 'Créatif', color: '#10B981' },
+  { key: 'creativity', label: 'Créativité', emoji: '🎨', lowLabel: 'Pragmat.', highLabel: 'Créatif', color: '#10B981' },
 ];
 
 export function GenomeReveal({ visible, genome, name, archetype, onComplete }: GenomeRevealProps) {
@@ -102,7 +102,7 @@ export function GenomeReveal({ visible, genome, name, archetype, onComplete }: G
           <Animated.View style={{ opacity: titleAnim, transform: [{ translateY: titleAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
             <Text style={styles.dna}>🧬</Text>
             <Text style={styles.title}>ADN de {name}</Text>
-            <Text style={styles.subtitle}>Traits uniques générés à la naissance</Text>
+            <Text style={styles.subtitle}>Traits uniques de naissance</Text>
           </Animated.View>
 
           {/* Barres de traits */}
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scaleLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: THEME.colors.textTertiary,
   },
   button: {

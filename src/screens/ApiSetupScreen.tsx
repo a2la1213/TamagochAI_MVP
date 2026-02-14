@@ -30,7 +30,7 @@ const PROVIDERS: Array<{
     name: 'Groq',
     icon: '🚀',
     free: true,
-    model: 'llama-4-scout',
+    model: 'Llama 4 Scout',
     url: 'https://console.groq.com/keys',
     steps: [
       '1. Va sur console.groq.com',
@@ -45,7 +45,7 @@ const PROVIDERS: Array<{
     name: 'Google Gemini',
     icon: '⚡',
     free: false,
-    model: 'gemini-2.0-flash-lite',
+    model: 'Flash Lite',
     url: 'https://aistudio.google.com/apikey',
     steps: [
       '1. Va sur aistudio.google.com/apikey',
@@ -59,7 +59,7 @@ const PROVIDERS: Array<{
     name: 'Anthropic Claude',
     icon: '🟣',
     free: false,
-    model: 'claude-sonnet-4-5-20250929',
+    model: 'Sonnet 4.5',
     url: 'https://console.anthropic.com/settings/keys',
     steps: [
       '1. Va sur console.anthropic.com',
@@ -73,7 +73,7 @@ const PROVIDERS: Array<{
     name: 'OpenAI',
     icon: '🟢',
     free: false,
-    model: 'gpt-4o',
+    model: 'GPT-4o',
     url: 'https://platform.openai.com/api-keys',
     steps: [
       '1. Va sur platform.openai.com',
@@ -87,7 +87,7 @@ const PROVIDERS: Array<{
     name: 'DeepSeek',
     icon: '🔵',
     free: false,
-    model: 'deepseek-chat',
+    model: 'DeepSeek V3',
     url: 'https://platform.deepseek.com/api_keys',
     steps: [
       '1. Va sur platform.deepseek.com',

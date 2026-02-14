@@ -13,7 +13,7 @@
 // extraire des souvenirs. Les souvenirs sont injectés dans
 // le prompt système du LLM.
 
-import { getDB } from '../database/DatabaseService';
+import { getDB, searchMemories as dbSearchMemories } from '../database/DatabaseService';
 import {
   Memory,
   MemoryType,
@@ -339,7 +339,7 @@ export async function findRelevantMemories(
     safeQuery(() => queryMemories(tamadachiId, { orderBy: 'recent', limit: 8 })),
     // 2. COUCHE FTS
     keywords.length > 0
-      ? safeQuery(() => searchMemories(tamadachiId, keywords.slice(0, 3).join(' OR '), Math.ceil(limit / 3)))
+      ? safeQuery(() => dbSearchMemories(tamadachiId, keywords.slice(0, 3).join(' OR '), Math.ceil(limit / 3)))
       : Promise.resolve([]),
     // 3. COUCHE FLASH
     safeQuery(() => queryMemories(tamadachiId, { type: 'flash', orderBy: 'importance', limit: 5 })),
@@ -862,8 +862,8 @@ export async function getRecentMemories(tamadachiId: string, count: number = 5):
 }
 
 /**
- * Recherche des souvenirs par mot-clé
+ * Recherche des souvenirs par mot-clé (délègue à la DB FTS)
+ * NOTE: ne PAS appeler findRelevantMemories ici (boucle infinie)
  */
-export async function searchMemories(tamadachiId: string, query: string, count: number = 5): Promise<Memory[]> {
-  return findRelevantMemories(tamadachiId, query, count);
-}
+// Re-export from DatabaseService (no recursion)
+export { dbSearchMemories as searchMemories };
